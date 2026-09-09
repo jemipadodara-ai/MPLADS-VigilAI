@@ -1,0 +1,6 @@
+{
+  "name": "MPLADS VigilAI",
+  "description": "AI-Powered MPLAD Monitoring, Anomaly Detection & Risk Intelligence",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

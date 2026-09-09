@@ -1,0 +1,129 @@
+{
+  "entities": {
+    "constituency": {
+      "title": "Constituency",
+      "description": "Indian Parliamentary Constituency MPLADS profile and risk intelligence",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "state": { "type": "string" },
+        "seatCode": { "type": "string" },
+        "mpName": { "type": "string" },
+        "mpParty": { "type": "string" },
+        "riskTier": { "type": "string", "enum": ["HIGH", "MEDIUM", "LOW"] },
+        "riskScore": { "type": "number" },
+        "riskSummary": { "type": "string" },
+        "totalSanctionedCr": { "type": "number" },
+        "totalSpentCr": { "type": "number" },
+        "unspentCr": { "type": "number" },
+        "coords": {
+          "type": "object",
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" }
+          }
+        },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "scSpentPercent": { "type": "number" },
+        "stSpentPercent": { "type": "number" },
+        "auditStatus": { "type": "string" },
+        "flaggedCount": { "type": "number" },
+        "lastAudited": { "type": "string" }
+      },
+      "required": ["id", "name", "state", "seatCode", "mpName", "riskTier", "riskScore"]
+    },
+    "project": {
+      "title": "Project",
+      "description": "Individual MPLADS public work record with audit flags and geo-coordinates",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "constituencyId": { "type": "string" },
+        "workCode": { "type": "string" },
+        "title": { "type": "string" },
+        "sector": { "type": "string" },
+        "sanctionedAmountLakhs": { "type": "number" },
+        "implementingAgency": { "type": "string" },
+        "contractorName": { "type": "string" },
+        "status": { "type": "string" },
+        "statusColor": { "type": "string" },
+        "anomalyFlag": { "type": "string" },
+        "satelliteVerified": { "type": "boolean" },
+        "location": { "type": "string" },
+        "gpsLat": { "type": "number" },
+        "gpsLng": { "type": "number" },
+        "notes": { "type": "string" }
+      },
+      "required": ["id", "constituencyId", "workCode", "title", "sanctionedAmountLakhs", "status"]
+    },
+    "alert": {
+      "title": "Alert",
+      "description": "High-priority audit alerts identified by AI fraud detection rules",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "constituencyId": { "type": "string" },
+        "constituencyName": { "type": "string" },
+        "severity": { "type": "string", "enum": ["HIGH", "MEDIUM", "LOW"] },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "financialExposure": { "type": "string" },
+        "recommendedAction": { "type": "string" }
+      },
+      "required": ["id", "constituencyId", "severity", "title", "description"]
+    },
+    "citizen_report": {
+      "title": "CitizenReport",
+      "description": "Public feedback or anomaly complaint submitted by citizens",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "constituencyId": { "type": "string" },
+        "workCode": { "type": "string" },
+        "issueType": { "type": "string" },
+        "description": { "type": "string" },
+        "citizenName": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "constituencyId", "issueType", "description", "createdAt"]
+    },
+    "user_profile": {
+      "title": "UserProfile",
+      "description": "User profile with role-based access control (RBAC)",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "standard"] },
+        "displayName": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["uid", "email", "role", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "entity": "user_profile",
+      "description": "User accounts with roles for RBAC"
+    },
+    "/constituencies/{constituencyId}": {
+      "entity": "constituency",
+      "description": "Constituency level MPLADS records"
+    },
+    "/projects/{projectId}": {
+      "entity": "project",
+      "description": "Detailed project level works"
+    },
+    "/alerts/{alertId}": {
+      "entity": "alert",
+      "description": "System fraud alerts"
+    },
+    "/citizen_reports/{reportId}": {
+      "entity": "citizen_report",
+      "description": "Citizen watchdog reports"
+    }
+  }
+}

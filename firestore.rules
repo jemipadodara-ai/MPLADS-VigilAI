@@ -1,0 +1,95 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 64 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidConstituency(data) {
+      return data.id is string && data.id.size() <= 64 &&
+             data.name is string && data.name.size() <= 100 &&
+             data.state is string && data.state.size() <= 60 &&
+             data.seatCode is string && data.seatCode.size() <= 30 &&
+             data.mpName is string && data.mpName.size() <= 100 &&
+             data.riskTier in ['HIGH', 'MEDIUM', 'LOW'] &&
+             data.riskScore is number && data.riskScore >= 0 && data.riskScore <= 100;
+    }
+
+    function isValidProject(data) {
+      return data.id is string && data.id.size() <= 64 &&
+             data.constituencyId is string && data.constituencyId.size() <= 64 &&
+             data.workCode is string && data.workCode.size() <= 64 &&
+             data.title is string && data.title.size() <= 200 &&
+             data.sanctionedAmountLakhs is number && data.sanctionedAmountLakhs >= 0 &&
+             data.status is string && data.status.size() <= 80;
+    }
+
+    function isValidAlert(data) {
+      return data.id is string && data.id.size() <= 64 &&
+             data.constituencyId is string && data.constituencyId.size() <= 64 &&
+             data.severity in ['HIGH', 'MEDIUM', 'LOW'] &&
+             data.title is string && data.title.size() <= 150 &&
+             data.description is string && data.description.size() <= 1000;
+    }
+
+    function isValidCitizenReport(data) {
+      return data.id is string && data.id.size() <= 64 &&
+             data.constituencyId is string && data.constituencyId.size() <= 64 &&
+             data.issueType is string && data.issueType.size() <= 100 &&
+             data.description is string && data.description.size() <= 2000 &&
+             data.createdAt is string && data.createdAt.size() <= 40;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidUserProfile(data) {
+      return data.uid is string && data.uid.size() <= 64 &&
+             data.email is string && data.email.size() <= 120 &&
+             data.role in ['admin', 'standard'] &&
+             data.createdAt is string && data.createdAt.size() <= 40;
+    }
+
+    // User Profiles with RBAC
+    match /users/{userId} {
+      allow read: if isSignedIn() && (isOwner(userId) || request.auth.token.email in ['jemipadodara@gmail.com', 'auditor@vigilai.gov.in']);
+      allow create, update: if isSignedIn() && isOwner(userId) && isValidId(userId) && isValidUserProfile(request.resource.data);
+      allow delete: if false;
+    }
+
+    // Constituencies: Publicly readable by all citizens & officials
+    match /constituencies/{constituencyId} {
+      allow read: if true;
+      allow create, update: if isValidId(constituencyId) && isValidConstituency(request.resource.data);
+      allow delete: if false;
+    }
+
+    // Projects: Publicly readable audit contracts
+    match /projects/{projectId} {
+      allow read: if true;
+      allow create, update: if isValidId(projectId) && isValidProject(request.resource.data);
+      allow delete: if false;
+    }
+
+    // Alerts: AI Vigilance Alerts
+    match /alerts/{alertId} {
+      allow read: if true;
+      allow create, update: if isValidId(alertId) && isValidAlert(request.resource.data);
+      allow delete: if false;
+    }
+
+    // Citizen Reports: Community Watchdog reports
+    match /citizen_reports/{reportId} {
+      allow read: if true;
+      allow create: if isValidId(reportId) && isValidCitizenReport(request.resource.data);
+      allow update, delete: if false;
+    }
+  }
+}
