@@ -32,26 +32,29 @@ interface AreaDashboardProps {
 
 export const AreaDashboard: React.FC<AreaDashboardProps> = ({
   areaName,
-  constituencies,
-  projects,
-  contractors,
+  constituencies = [],
+  projects = [],
+  contractors = [],
   onSelectArea,
   onBackToOverview,
   onSelectProject,
 }) => {
+  const safeProjects = projects || [];
+  const safeConstituencies = constituencies || [];
+  const safeContractors = contractors || [];
   const [activeFilter, setActiveFilter] = useState<'all' | 'flagged' | 'clean'>('all');
 
   const currentConstituency =
-    constituencies.find((c) => c.constituency.toLowerCase() === areaName.toLowerCase()) ||
-    constituencies[0];
+    safeConstituencies.find((c) => c.constituency.toLowerCase() === areaName.toLowerCase()) ||
+    safeConstituencies[0] || { constituency: areaName };
 
-  const areaProjects = projects.filter(
-    (p) => p.constituency.toLowerCase() === currentConstituency.constituency.toLowerCase()
+  const areaProjects = safeProjects.filter(
+    (p) => currentConstituency?.constituency && (p.constituency || '').toLowerCase() === currentConstituency.constituency.toLowerCase()
   );
 
-  const flaggedProjects = areaProjects.filter((p) => p.anomalyFlags.length > 0);
-  const criticalProjects = areaProjects.filter((p) => p.riskLevel === 'Critical');
-  const cleanProjects = areaProjects.filter((p) => p.anomalyFlags.length === 0);
+  const flaggedProjects = areaProjects.filter((p) => (p.anomalyFlags || []).length > 0 || (p.detectedAnomalies || []).length > 0);
+  const criticalProjects = areaProjects.filter((p) => (p.riskLevel || '').toUpperCase() === 'CRITICAL');
+  const cleanProjects = areaProjects.filter((p) => (p.anomalyFlags || []).length === 0 && (p.detectedAnomalies || []).length === 0);
 
   const displayedProjects =
     activeFilter === 'flagged'
@@ -61,8 +64,8 @@ export const AreaDashboard: React.FC<AreaDashboardProps> = ({
       : areaProjects;
 
   // Key contractors active in this constituency
-  const areaContractors = contractors.filter((c) =>
-    c.constituenciesCovered.includes(currentConstituency.constituency)
+  const areaContractors = safeContractors.filter((c) =>
+    currentConstituency?.constituency && (c.constituenciesCovered || []).includes(currentConstituency.constituency)
   );
 
   // Area Risk summary logic
@@ -71,11 +74,11 @@ export const AreaDashboard: React.FC<AreaDashboardProps> = ({
 
   if (criticalProjects.length > 0) {
     areaRiskTone = 'Critical';
-    const primaryAnom = criticalProjects[0].anomalyFlags[0];
+    const primaryAnom = (criticalProjects[0].anomalyFlags || criticalProjects[0].detectedAnomalies || [])[0];
     areaPrimaryReason = `${criticalProjects[0].title}: ${primaryAnom?.title || 'Severe anomaly detected'} (${primaryAnom?.description || 'Violates guidelines'}).`;
   } else if (flaggedProjects.length > 0) {
     areaRiskTone = 'High';
-    const primaryAnom = flaggedProjects[0].anomalyFlags[0];
+    const primaryAnom = (flaggedProjects[0].anomalyFlags || flaggedProjects[0].detectedAnomalies || [])[0];
     areaPrimaryReason = `${flaggedProjects[0].title}: ${primaryAnom?.title || 'Procedural irregularity'} (${primaryAnom?.description || 'Under review'}).`;
   }
 
@@ -326,10 +329,11 @@ export const AreaDashboard: React.FC<AreaDashboardProps> = ({
             </div>
           ) : (
             displayedProjects.map((p) => {
-              const hasAnomaly = p.anomalyFlags.length > 0;
+              const flags = p.anomalyFlags || p.detectedAnomalies || [];
+              const hasAnomaly = flags.length > 0;
               const primaryReason =
-                p.anomalyFlags[0]?.description ||
-                (hasAnomaly ? p.anomalyFlags[0]?.title : 'Fully compliant with MoSPI guidelines.');
+                flags[0]?.description ||
+                (hasAnomaly ? flags[0]?.title : 'Fully compliant with MoSPI guidelines.');
 
               return (
                 <motion.div
@@ -370,9 +374,9 @@ export const AreaDashboard: React.FC<AreaDashboardProps> = ({
                         >
                           <div className="font-bold mb-0.5 flex items-center gap-1.5">
                             <span>Reason:</span>
-                            {hasAnomaly && (
+                            {hasAnomaly && flags[0]?.title && (
                               <span className="font-medium text-slate-600">
-                                ({p.anomalyFlags[0]?.title})
+                                ({flags[0]?.title})
                               </span>
                             )}
                           </div>

@@ -6,6 +6,16 @@ const cfg = JSON.parse(fs.readFileSync('./firebase-applet-config.json', 'utf8'))
 const app = initializeApp(cfg);
 const db = getFirestore(app, cfg.firestoreDatabaseId);
 
+let officialProjects = [];
+try {
+  if (fs.existsSync('./src/data/officialMpladsIngest.json')) {
+    officialProjects = JSON.parse(fs.readFileSync('./src/data/officialMpladsIngest.json', 'utf8'));
+    console.log(`Loaded ${officialProjects.length} records from officialMpladsIngest.json`);
+  }
+} catch (e) {
+  console.warn("Could not read officialMpladsIngest.json:", e.message);
+}
+
 export const REAL_WORLD_CONSTITUENCIES = [
   {
     id: "varanasi",
@@ -824,11 +834,12 @@ async function seedDatabase() {
     console.log(`  ✓ Seeded constituency: ${item.name} (${item.seatCode})`);
   }
 
-  // 2. Seed Projects
-  console.log("Seeding projects...");
-  for (const proj of REAL_WORLD_PROJECTS) {
-    await setDoc(doc(db, "projects", proj.id), proj);
-    console.log(`  ✓ Seeded project: ${proj.workCode} - ${proj.title}`);
+  // 2. Seed Projects (from officialMpladsIngest.json + baseline)
+  console.log("Seeding projects from officialMpladsIngest.json...");
+  const projectsToSeed = officialProjects.length > 0 ? officialProjects : REAL_WORLD_PROJECTS;
+  for (const proj of projectsToSeed) {
+    await setDoc(doc(db, "projects", proj.id), proj, { merge: true });
+    console.log(`  ✓ Seeded project: ${proj.workCode || proj.id} - ${proj.title}`);
   }
 
   // 3. Seed Alerts

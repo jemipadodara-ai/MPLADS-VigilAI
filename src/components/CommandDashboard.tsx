@@ -27,37 +27,42 @@ interface CommandDashboardProps {
 }
 
 export const CommandDashboard: React.FC<CommandDashboardProps> = ({
-  projects,
-  constituencies,
+  projects = [],
+  constituencies = [],
   onSelectProject,
   onNavigateToTab,
   onSelectArea,
 }) => {
+  const safeProjects = projects || [];
   const [filterType, setFilterType] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  const criticalProjects = projects.filter((p) => p.riskLevel === 'Critical');
-  const highRiskProjects = projects.filter((p) => p.riskLevel === 'High');
-  const mediumProjects = projects.filter((p) => p.riskLevel === 'Medium');
-  const cleanProjects = projects.filter((p) => p.riskLevel === 'Low');
+  const criticalProjects = safeProjects.filter((p) => (p.riskLevel || '').toUpperCase() === 'CRITICAL');
+  const highRiskProjects = safeProjects.filter((p) => (p.riskLevel || '').toUpperCase() === 'HIGH');
+  const mediumProjects = safeProjects.filter((p) => (p.riskLevel || '').toUpperCase() === 'MEDIUM');
+  const cleanProjects = safeProjects.filter((p) => (p.riskLevel || '').toUpperCase() === 'LOW');
 
   // Filtered projects for the Risk & Reason board
-  const filteredProjects = projects.filter((p) => {
+  const filteredProjects = safeProjects.filter((p) => {
     const matchesSearch =
-      p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.constituency.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.contractorName.toLowerCase().includes(searchQuery.toLowerCase());
+      (p.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.constituency || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.contractorName || '').toLowerCase().includes(searchQuery.toLowerCase());
 
     if (!matchesSearch) return false;
 
-    if (filterType === 'critical') return p.riskLevel === 'Critical';
-    if (filterType === 'high') return p.riskLevel === 'High' || p.riskLevel === 'Critical';
-    if (filterType === 'clean') return p.riskLevel === 'Low';
+    if (filterType === 'critical') return (p.riskLevel || '').toUpperCase() === 'CRITICAL';
+    if (filterType === 'high') return (p.riskLevel || '').toUpperCase() === 'HIGH' || (p.riskLevel || '').toUpperCase() === 'CRITICAL';
+    if (filterType === 'clean') return (p.riskLevel || '').toUpperCase() === 'LOW';
     if (filterType === 'duplicates') {
-      return p.anomalyFlags.some((a) => a.type === 'DUPLICATE_WORK' || a.type === 'GEOTAG_MISMATCH');
+      return (p.anomalyFlags || p.detectedAnomalies || []).some(
+        (a: any) => a.type === 'DUPLICATE_WORK' || a.type === 'GEOTAG_MISMATCH'
+      );
     }
     if (filterType === 'slicing') {
-      return p.anomalyFlags.some((a) => a.type === 'TENDER_SLICING' || a.type === 'CONTRACTOR_CARTEL');
+      return (p.anomalyFlags || p.detectedAnomalies || []).some(
+        (a: any) => a.type === 'TENDER_SLICING' || a.type === 'CONTRACTOR_CARTEL'
+      );
     }
     return true;
   });
@@ -268,7 +273,8 @@ export const CommandDashboard: React.FC<CommandDashboardProps> = ({
             </div>
           ) : (
             filteredProjects.map((p, index) => {
-              const primaryAnomaly = p.anomalyFlags[0];
+              const flags = p.anomalyFlags || p.detectedAnomalies || [];
+              const primaryAnomaly = flags[0];
               const isClean = p.riskLevel === 'Low';
               const reasonText = isClean
                 ? 'Work passed all MoSPI parameter verifications. Open competitive tender, valid geotagging, citizen board present.'
@@ -346,7 +352,7 @@ export const CommandDashboard: React.FC<CommandDashboardProps> = ({
                           </span>
                           {primaryAnomaly?.ruleReference && (
                             <span className="text-[10px] font-normal text-slate-500 ml-auto hidden sm:inline">
-                              Ref: {primaryAnomaly.ruleReference.split(',')[0]}
+                              Ref: {String(primaryAnomaly.ruleReference).split(',')[0]}
                             </span>
                           )}
                         </div>

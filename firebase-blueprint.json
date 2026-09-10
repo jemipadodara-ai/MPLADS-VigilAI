@@ -97,11 +97,36 @@
       "properties": {
         "uid": { "type": "string" },
         "email": { "type": "string" },
-        "role": { "type": "string", "enum": ["admin", "standard"] },
+        "role": { "type": "string", "enum": ["admin", "citizen", "standard"] },
         "displayName": { "type": "string" },
         "createdAt": { "type": "string" }
       },
       "required": ["uid", "email", "role", "createdAt"]
+    },
+    "citizen_verification": {
+      "title": "CitizenVerification",
+      "description": "On-ground physical verification of works submitted by citizens",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "projectId": { "type": "string" },
+        "status": { "type": "string" },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "projectId", "status", "description", "createdAt"]
+    },
+    "audit_log": {
+      "title": "AuditLog",
+      "description": "Immutable administrative action log",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "action": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "action", "userEmail", "timestamp"]
     }
   },
   "firestore": {
@@ -124,6 +149,14 @@
     "/citizen_reports/{reportId}": {
       "entity": "citizen_report",
       "description": "Citizen watchdog reports"
+    },
+    "/citizen_verifications/{verificationId}": {
+      "entity": "citizen_verification",
+      "description": "Citizen ground verifications"
+    },
+    "/audit_logs/{logId}": {
+      "entity": "audit_log",
+      "description": "Administrative audit trail"
     }
   }
 }

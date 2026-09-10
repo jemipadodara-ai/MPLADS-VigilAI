@@ -93,7 +93,7 @@ export const AiInvestigator: React.FC<AiInvestigatorProps> = ({ projects, consti
             contractor: p.contractorName,
             tender: p.tenderType,
             riskScore: p.overallRiskScore,
-            flags: p.anomalyFlags.map((f) => f.title),
+            flags: (p.anomalyFlags || p.detectedAnomalies || []).map((f: any) => f.title),
           })),
         }),
       });

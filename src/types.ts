@@ -193,6 +193,16 @@ export interface MPLADProject {
   lastAuditedDate?: string;
   notes?: string;
   rawDoc?: any;
+
+  // Data Provenance & Trust
+  provenance?: DataProvenance;
+
+  // Citizen Reality Check Metrics
+  citizenVerificationsCount?: number;
+  citizenConfirmedCount?: number;
+  citizenIssueCount?: number;
+  citizenDiscrepancyFlag?: boolean;
+  citizenStatus?: string;
 }
 
 export interface Alert {
@@ -301,6 +311,62 @@ export interface DataQualityIssue {
     | 'Duplicate Identifier';
   description: string;
   currentValue: string | number;
+}
+
+export interface DataProvenance {
+  source: string; // e.g. "Government / data.gov.in" | "Official Baseline / MoSPI"
+  dataType: 'Official' | 'AI-Derived' | 'Citizen-Submitted';
+  lastSynchronized: string;
+  sourceUrl?: string;
+  verifiedOfficial: boolean;
+  citation: string;
+}
+
+export interface CitizenVerification {
+  id: string;
+  projectId: string;
+  workCode?: string;
+  projectTitle?: string;
+  constituency?: string;
+  district?: string;
+  state?: string;
+  status:
+    | 'Completed'
+    | 'Incomplete'
+    | 'Not Found'
+    | 'Wrong Location'
+    | 'Damaged'
+    | 'Not Operational'
+    | 'Quality Concern'
+    | 'Other';
+  description: string;
+  locationLandmark?: string;
+  citizenName?: string;
+  isAnonymous: boolean;
+  createdAt: string;
+  photoUrl?: string;
+  reviewedByAdmin?: boolean;
+}
+
+export interface InspectionPriorityItem {
+  rank: number;
+  project: MPLADProject;
+  priorityTier: 'CRITICAL' | 'HIGH' | 'MEDIUM';
+  priorityScore: number; // 0 - 100 composite
+  reasons: string[];
+  suggestedChecklist: string[];
+  citizenDiscrepancy: boolean;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  userEmail: string;
+  userRole: string;
+  action: string;
+  target: string;
+  timestamp: string;
+  details?: string;
+  status: 'SUCCESS' | 'WARNING' | 'FAILED';
 }
 
 export interface ProjectFilterState {

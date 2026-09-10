@@ -39,8 +39,8 @@ export const ContractorCartelVisualizer: React.FC<ContractorCartelVisualizerProp
 
   const contractorWorks = projects.filter(
     (p) =>
-      p.contractorName.toLowerCase() === currentContractor?.name.toLowerCase() ||
-      p.contractorGstin === currentContractor?.gstin
+      (currentContractor?.name && p.contractorName?.toLowerCase() === currentContractor.name.toLowerCase()) ||
+      (currentContractor?.gstin && p.contractorGstin === currentContractor.gstin)
   );
 
   return (

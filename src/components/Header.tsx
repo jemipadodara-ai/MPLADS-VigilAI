@@ -17,11 +17,12 @@ export const Header: React.FC<HeaderProps> = ({
   activeTab,
   setActiveTab,
 }) => {
-  const criticalCount = projects.filter((p) => p.riskLevel === 'Critical').length;
-  const highCount = projects.filter((p) => p.riskLevel === 'High').length;
-  const totalExposureLakhs = projects
-    .filter((p) => p.riskLevel === 'Critical' || p.riskLevel === 'High')
-    .reduce((acc, p) => acc + p.sanctionedAmountLakhs, 0);
+  const safeProjects = projects || [];
+  const criticalCount = safeProjects.filter((p) => (p.riskLevel || '').toUpperCase() === 'CRITICAL').length;
+  const highCount = safeProjects.filter((p) => (p.riskLevel || '').toUpperCase() === 'HIGH').length;
+  const totalExposureLakhs = safeProjects
+    .filter((p) => (p.riskLevel || '').toUpperCase() === 'CRITICAL' || (p.riskLevel || '').toUpperCase() === 'HIGH')
+    .reduce((acc, p) => acc + (p.sanctionedAmountLakhs || 0), 0);
 
   const tabs = [
     { id: 'dashboard', label: 'Command Center', icon: Activity },

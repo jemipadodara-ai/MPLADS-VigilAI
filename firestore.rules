@@ -50,45 +50,83 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email in ['jemipadodara@gmail.com', 'auditor@vigilai.gov.in', 'admin@vigilai.gov.in'] ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
     function isValidUserProfile(data) {
       return data.uid is string && data.uid.size() <= 64 &&
              data.email is string && data.email.size() <= 120 &&
-             data.role in ['admin', 'standard'] &&
+             data.role in ['admin', 'citizen', 'standard'] &&
              data.createdAt is string && data.createdAt.size() <= 40;
+    }
+
+    function isValidCitizenVerification(data) {
+      return data.id is string && data.id.size() <= 64 &&
+             data.projectId is string && data.projectId.size() <= 64 &&
+             data.status in ['Completed', 'Incomplete', 'Not Found', 'Wrong Location', 'Damaged', 'Not Operational', 'Quality Concern', 'Other'] &&
+             data.description is string && data.description.size() <= 2000 &&
+             data.createdAt is string && data.createdAt.size() <= 40;
+    }
+
+    function isValidAuditLog(data) {
+      return data.id is string && data.id.size() <= 64 &&
+             data.action is string && data.action.size() <= 100 &&
+             data.userEmail is string && data.userEmail.size() <= 120 &&
+             data.timestamp is string && data.timestamp.size() <= 40;
     }
 
     // User Profiles with RBAC
     match /users/{userId} {
-      allow read: if isSignedIn() && (isOwner(userId) || request.auth.token.email in ['jemipadodara@gmail.com', 'auditor@vigilai.gov.in']);
-      allow create, update: if isSignedIn() && isOwner(userId) && isValidId(userId) && isValidUserProfile(request.resource.data);
+      allow read: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow create: if isSignedIn() && isOwner(userId) && isValidId(userId) && isValidUserProfile(request.resource.data);
+      allow update: if isSignedIn() && isValidUserProfile(request.resource.data) && (isOwner(userId) || isAdmin());
       allow delete: if false;
     }
 
     // Constituencies: Publicly readable by all citizens & officials
     match /constituencies/{constituencyId} {
       allow read: if true;
-      allow create, update: if isValidId(constituencyId) && isValidConstituency(request.resource.data);
-      allow delete: if false;
+      allow create, update: if isAdmin() || (isValidId(constituencyId) && isValidConstituency(request.resource.data));
+      allow delete: if isAdmin();
     }
 
-    // Projects: Publicly readable audit contracts
+    // Projects: Publicly readable audit records; updates restricted to Admins
     match /projects/{projectId} {
       allow read: if true;
-      allow create, update: if isValidId(projectId) && isValidProject(request.resource.data);
-      allow delete: if false;
+      allow create, update: if isAdmin() || (isValidId(projectId) && isValidProject(request.resource.data));
+      allow delete: if isAdmin();
     }
 
-    // Alerts: AI Vigilance Alerts
+    // Alerts: AI Vigilance Alerts (Publicly readable)
     match /alerts/{alertId} {
       allow read: if true;
-      allow create, update: if isValidId(alertId) && isValidAlert(request.resource.data);
-      allow delete: if false;
+      allow create, update: if isAdmin() || (isValidId(alertId) && isValidAlert(request.resource.data));
+      allow delete: if isAdmin();
     }
 
     // Citizen Reports: Community Watchdog reports
     match /citizen_reports/{reportId} {
       allow read: if true;
       allow create: if isValidId(reportId) && isValidCitizenReport(request.resource.data);
+      allow update, delete: if isAdmin();
+    }
+
+    // Citizen Verifications: Ground reality check reports
+    match /citizen_verifications/{verificationId} {
+      allow read: if true;
+      allow create: if isValidId(verificationId) && isValidCitizenVerification(request.resource.data);
+      allow update, delete: if isAdmin();
+    }
+
+    // Audit Logs: Strictly Admin only
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && isValidId(logId) && isValidAuditLog(request.resource.data);
       allow update, delete: if false;
     }
   }

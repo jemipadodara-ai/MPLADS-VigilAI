@@ -10,6 +10,7 @@ import {
   ValidationResult,
   ProjectRiskAnalysis,
   DiagnosticSummary,
+  Alert,
 } from '../types';
 
 // =============================================================================
@@ -1384,6 +1385,19 @@ export function toMPLADProject(
     riskLevel: analysis.riskLevel,
     riskFactors: analysis.riskFactors,
     detectedAnomalies: analysis.anomalies,
+    anomalyFlags:
+      raw.anomalyFlags && Array.isArray(raw.anomalyFlags) && raw.anomalyFlags.length > 0
+        ? raw.anomalyFlags
+        : (analysis.anomalies || []).map((a: any) => ({
+            id: a.id,
+            type: a.type || a.category,
+            severity: a.severity,
+            title: a.title,
+            description: a.description,
+            ruleReference: a.guidelineRule || a.ruleReference || 'MoSPI MPLADS Guidelines 2023',
+            evidence: a.evidence || 'Algorithmic heuristic check',
+            estimatedLossLakhs: a.estimatedLossLakhs || 0,
+          })),
     similarProjects: analysis.similarProjects,
     mainAnomaly: analysis.mainAnomaly,
     investigationStatus: raw.investigationStatus || (analysis.requiresVerification ? 'New' : 'Verified'),
@@ -1404,9 +1418,12 @@ export function analyzeAllProjects(
   normalized: NormalizedProject[];
   analyses: ProjectRiskAnalysis[];
   projects: MPLADProject[];
+  scoredProjects: MPLADProject[];
+  alerts: Alert[];
+  contractors: ContractorProfile[];
   summary: DiagnosticSummary;
 } {
-  const normalized = rawProjects.map((raw) => normalizeProjectData(raw));
+  const normalized = (rawProjects || []).map((raw) => normalizeProjectData(raw));
 
   let validRecords = 0;
   let totalDqIssues = 0;
@@ -1444,6 +1461,27 @@ export function analyzeAllProjects(
     projects.push(toMPLADProject(np, analysis));
   }
 
+  // Generate actionable Alert objects for critical & high risk works
+  const alerts: Alert[] = [];
+  for (const p of projects) {
+    const rLevel = String(p.riskLevel || '').toUpperCase();
+    if (rLevel === 'CRITICAL' || rLevel === 'HIGH') {
+      const severity: RiskLevel = rLevel === 'CRITICAL' ? 'Critical' : 'High';
+      alerts.push({
+        id: `alert-${p.id || p.workCode}`,
+        constituencyId: p.constituencyId || p.constituency || 'CONST-1',
+        constituencyName: p.constituency || p.district || 'Constituency',
+        severity,
+        title: p.mainAnomaly || (severity === 'Critical' ? 'Critical Audit Exception' : 'Elevated Risk Work'),
+        description: `Project "${p.title}" (${p.workCode}) flagged with score ${p.overallRiskScore || 0}/100. ${p.detectedAnomalies?.[0]?.description || ''}`,
+        timestamp: p.sanctionDate || new Date().toISOString().split('T')[0],
+        financialExposure: `₹${p.sanctionedAmountLakhs || 0} L`,
+        recommendedAction: severity === 'Critical' ? 'Initiate immediate on-site physical inspection and freeze pending disbursements.' : 'Verify measurement book entries and review contractor performance history.',
+        status: 'New',
+      });
+    }
+  }
+
   const summary: DiagnosticSummary = {
     totalRecords: normalized.length,
     validRecords,
@@ -1463,6 +1501,9 @@ export function analyzeAllProjects(
     normalized,
     analyses,
     projects,
+    scoredProjects: projects,
+    alerts,
+    contractors,
     summary,
   };
 }

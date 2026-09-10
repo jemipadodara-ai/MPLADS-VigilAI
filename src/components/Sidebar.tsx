@@ -12,19 +12,31 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldCheck,
+  Shield,
   LogOut,
   UserCheck,
+  User,
+  ClipboardList,
+  Users,
+  Database,
+  Activity,
+  Globe,
 } from 'lucide-react';
 
 export type ActiveTab =
   | 'dashboard'
+  | 'inspection-priority'
   | 'projects'
   | 'risk-center'
   | 'anomalies'
   | 'map'
   | 'contractors'
+  | 'citizen-reports'
+  | 'government-sync'
   | 'ai-assistant'
   | 'data-quality'
+  | 'audit-logs'
+  | 'profile'
   | 'settings';
 
 interface SidebarProps {
@@ -37,9 +49,10 @@ interface SidebarProps {
     email?: string | null;
     displayName?: string | null;
     isAnonymous?: boolean;
-    role?: 'admin' | 'standard';
+    role?: 'admin' | 'standard' | 'citizen';
   } | null;
   onSignOut?: () => void;
+  onSwitchToCitizenPortal?: () => void;
 }
 
 interface NavItem {
@@ -47,19 +60,8 @@ interface NavItem {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   badge?: number;
+  adminOnly?: boolean;
 }
-
-const NAV_ITEMS: NavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'projects', label: 'Projects', icon: FolderGit2 },
-  { id: 'risk-center', label: 'Risk Center', icon: ShieldAlert, badge: undefined },
-  { id: 'anomalies', label: 'Anomalies', icon: SearchCode },
-  { id: 'map', label: 'Map View', icon: MapPin },
-  { id: 'contractors', label: 'Contractors', icon: Building2 },
-  { id: 'ai-assistant', label: 'AI Assistant', icon: Sparkles },
-  { id: 'data-quality', label: 'Data Quality', icon: DatabaseZap },
-  { id: 'settings', label: 'Settings', icon: Settings },
-];
 
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
@@ -69,7 +71,51 @@ export const Sidebar: React.FC<SidebarProps> = ({
   criticalAlertsCount = 0,
   user,
   onSignOut,
+  onSwitchToCitizenPortal,
 }) => {
+  const isAdmin = user?.role === 'admin';
+
+  // Base navigation items accessible to authenticated auditors
+  const navItems: NavItem[] = [
+    { id: 'dashboard', label: 'Executive Console', icon: LayoutDashboard },
+    { id: 'inspection-priority', label: 'Inspection Priority', icon: ClipboardList },
+    { id: 'projects', label: 'Projects Registry', icon: FolderGit2 },
+    { id: 'risk-center', label: 'Risk Center', icon: ShieldAlert },
+    { id: 'anomalies', label: 'Anomaly Engine', icon: SearchCode },
+    { id: 'map', label: 'Geographic Intelligence', icon: MapPin },
+    { id: 'contractors', label: 'Contractor Profiles', icon: Building2 },
+    { id: 'citizen-reports', label: 'Citizen Reality Checks', icon: Users },
+    { id: 'ai-assistant', label: 'AI Investigator', icon: Sparkles },
+    { id: 'data-quality', label: 'Data Diagnostics', icon: DatabaseZap },
+  ];
+
+  // Elevated privileges: Admin Center, Government Data Sync, Audit Logs only visible to users with role === 'admin'
+  if (isAdmin) {
+    navItems.push(
+      {
+        id: 'government-sync',
+        label: 'Government Sync',
+        icon: Database,
+        adminOnly: true,
+      },
+      {
+        id: 'audit-logs',
+        label: 'Audit Trail',
+        icon: Activity,
+        adminOnly: true,
+      },
+      {
+        id: 'settings',
+        label: 'Admin Center',
+        icon: Shield,
+        adminOnly: true,
+      }
+    );
+  }
+
+  // Profile always available
+  navItems.push({ id: 'profile', label: 'My Profile', icon: User });
+
   return (
     <aside
       id="main-sidebar"
@@ -134,7 +180,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Navigation Items */}
         <nav className="p-3 space-y-1 mt-1">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             const badgeCount = item.id === 'risk-center' ? criticalAlertsCount : item.badge;
@@ -144,23 +190,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   id={`nav-item-${item.id}`}
                   onClick={() => onSelectTab(item.id)}
-                  className={`w-full flex items-center rounded-xl font-semibold text-xs transition-all ${
+                  className={`w-full flex items-center rounded-xl font-semibold text-xs transition-all cursor-pointer ${
                     isCollapsed
                       ? 'justify-center p-3'
                       : 'gap-3 px-3 py-2.5 text-left'
                   } ${
                     isActive
-                      ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200/80 shadow-2xs'
+                      ? item.adminOnly
+                        ? 'bg-blue-900 text-white font-bold shadow-xs'
+                        : 'bg-blue-50 text-blue-700 font-bold border border-blue-200/80 shadow-2xs'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent'
                   }`}
                 >
                   <Icon
                     className={`w-4 h-4 shrink-0 ${
-                      isActive ? 'text-blue-700' : 'text-slate-500 group-hover:text-slate-800'
+                      isActive
+                        ? item.adminOnly
+                          ? 'text-white'
+                          : 'text-blue-700'
+                        : item.adminOnly
+                        ? 'text-blue-700 group-hover:text-blue-900'
+                        : 'text-slate-500 group-hover:text-slate-800'
                     }`}
                   />
                   {!isCollapsed && (
                     <span className="truncate flex-1 tracking-normal">{item.label}</span>
+                  )}
+                  {!isCollapsed && item.adminOnly && (
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase bg-blue-100 text-blue-800">
+                      Admin
+                    </span>
                   )}
                   {!isCollapsed && badgeCount && badgeCount > 0 ? (
                     <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700">
@@ -184,26 +243,54 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* User Profile & Sign Out Footer */}
       <div className="p-3 border-t border-slate-200/80 space-y-2">
+        {onSwitchToCitizenPortal && !isCollapsed && (
+          <button
+            onClick={onSwitchToCitizenPortal}
+            className="w-full px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center justify-between transition-colors group"
+            title="Open Public Citizen Portal"
+          >
+            <div className="flex items-center gap-2">
+              <Globe className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Public Citizen Portal</span>
+            </div>
+            <span className="text-[10px] text-slate-400 group-hover:text-slate-600">View →</span>
+          </button>
+        )}
         {!isCollapsed ? (
           <div className="space-y-2">
-            {/* User Account Info */}
-            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-2">
+            {/* Clickable User Account Info to open Profile View */}
+            <div
+              id="sidebar-user-profile-card"
+              onClick={() => onSelectTab('profile')}
+              className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 transition-all cursor-pointer group ${
+                activeTab === 'profile'
+                  ? 'bg-blue-50 border-blue-200 shadow-2xs'
+                  : 'bg-slate-50 hover:bg-slate-100/90 border-slate-200/80'
+              }`}
+              title="Click to view Auditor Profile & Credentials"
+            >
               <div className="flex items-center gap-2 overflow-hidden">
-                <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center shrink-0">
+                <div
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                    activeTab === 'profile'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-blue-100 text-blue-800 group-hover:bg-blue-200'
+                  }`}
+                >
                   <UserCheck className="w-4 h-4" />
                 </div>
                 <div className="truncate">
-                  <div className="text-xs font-bold text-slate-900 truncate">
+                  <div className="text-xs font-bold text-slate-900 truncate group-hover:text-blue-700 transition-colors">
                     {user?.email ? user.email.split('@')[0] : 'Auditor Official'}
                   </div>
                   <div className="text-[10px] text-slate-500 truncate flex items-center gap-1">
                     <span
                       className={`inline-block w-1.5 h-1.5 rounded-full ${
-                        user?.role === 'admin' ? 'bg-blue-600' : 'bg-slate-400'
+                        isAdmin ? 'bg-blue-600' : 'bg-emerald-500'
                       }`}
                     />
                     <span>
-                      {user?.role === 'admin'
+                      {isAdmin
                         ? 'Admin Official'
                         : user?.isAnonymous
                         ? 'Guest Auditor'
@@ -216,8 +303,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {onSignOut && (
                 <button
                   id="sidebar-signout-btn"
-                  onClick={onSignOut}
-                  className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors shrink-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSignOut();
+                  }}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors shrink-0 cursor-pointer"
                   title="Sign Out"
                   aria-label="Sign Out"
                 >
@@ -228,11 +318,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2">
+            <button
+              id="sidebar-user-avatar-collapsed"
+              onClick={() => onSelectTab('profile')}
+              className={`p-2 rounded-xl transition-colors cursor-pointer ${
+                activeTab === 'profile'
+                  ? 'bg-blue-100 text-blue-800'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+              title="View Auditor Profile"
+            >
+              <User className="w-4 h-4" />
+            </button>
             {onSignOut && (
               <button
                 id="sidebar-signout-btn-collapsed"
                 onClick={onSignOut}
-                className="p-2 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                className="p-2 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                 title="Sign Out"
                 aria-label="Sign Out"
               >
