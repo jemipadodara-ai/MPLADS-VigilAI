@@ -7,7 +7,7 @@ import { SettingsView } from './SettingsView';
 interface AssistantAndSettingsProps {
   projects: MPLADProject[];
   onSelectProjectByWorkCode: (code: string) => void;
-  onRefreshData: () => void;
+  onRefreshData?: () => void;
   isLoadingData?: boolean;
   userRole?: 'admin' | 'standard';
   isRoleLoading?: boolean;
@@ -16,7 +16,7 @@ interface AssistantAndSettingsProps {
 export const AssistantAndSettings: React.FC<AssistantAndSettingsProps> = ({
   projects,
   onSelectProjectByWorkCode,
-  onRefreshData,
+  onRefreshData = () => {},
   isLoadingData = false,
   userRole = 'admin',
   isRoleLoading = false,
