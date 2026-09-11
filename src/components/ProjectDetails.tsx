@@ -169,10 +169,14 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
   const hasPipelineBreakdown = spentPct > 50 && (project.completionPercentage || 0) < 40;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex justify-end">
+      {/* Backdrop overlay */}
+      <div className="fixed inset-0" onClick={onClose} />
+
+      {/* Side Drawer Panel */}
       <div
-        id="project-digital-health-card-modal"
-        className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden my-auto"
+        id="project-side-drawer"
+        className="relative z-10 bg-white border-l border-slate-200 shadow-2xl max-w-2xl sm:max-w-3xl w-full h-full flex flex-col overflow-hidden animate-slide-in-right"
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/80 flex items-start justify-between">

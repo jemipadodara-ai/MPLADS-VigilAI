@@ -19,10 +19,12 @@ import { analyzeAllProjects, validateProjectData } from './utils/anomalyEngine';
 
 // Components & Views
 import { Sidebar, ActiveTab } from './components/Sidebar';
-import { DashboardView } from './components/views/DashboardView';
+import { LandingPage } from './components/views/LandingPage';
+import { Dashboard } from './components/views/Dashboard';
+import { Projects } from './components/views/Projects';
+import { GeospatialMap } from './components/views/GeospatialMap';
+import { AssistantAndSettings } from './components/views/AssistantAndSettings';
 import { DataQualityView } from './components/views/DataQualityView';
-import { AiAssistantView } from './components/views/AiAssistantView';
-import { SettingsView } from './components/views/SettingsView';
 import { Login, UserAuthProfile } from './components/views/Login';
 import { SignUp } from './components/views/SignUp';
 
@@ -77,8 +79,8 @@ const ADMIN_EMAILS = [
 ];
 
 export function App() {
-  // Navigation & Portal State
-  const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
+  // Navigation & Portal State (Landing, Dashboard, Projects, Map, Assistant & Settings)
+  const [activeTab, setActiveTab] = useState<ActiveTab>('landing');
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
   const [isCitizenPortal, setIsCitizenPortal] = useState<boolean>(false);
   const [authView, setAuthView] = useState<'login' | 'signup' | null>(null);
@@ -430,210 +432,46 @@ export function App() {
   };
 
   // ---------------------------------------------------------------------------
-  // PUBLIC CITIZEN PORTAL VIEW
+  // 1. PUBLIC LANDING PAGE VIEW
   // ---------------------------------------------------------------------------
-  if (isCitizenPortal) {
+  if (activeTab === 'landing') {
     return (
-      <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans antialiased">
-        {/* Citizen Top Navbar */}
-        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-2xs">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-700 flex items-center justify-center text-white font-bold shadow-xs">
-              <Globe className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="font-extrabold text-base tracking-tight text-slate-900 flex items-center gap-2">
-                <span>MPLADS VigilAI Citizen Portal</span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                  Public Transparency
-                </span>
-              </div>
-              <div className="text-xs text-slate-500">
-                Track Lok Sabha & Rajya Sabha public development funds in your constituency
-              </div>
-            </div>
-          </div>
+      <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased">
+        <LandingPage
+          onEnterPortal={() => {
+            setActiveTab('dashboard');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onExploreProjects={() => {
+            setActiveTab('projects');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onSelectProject={(p) => setSelectedProject(p)}
+          featuredProject={scoredProjects[0] || null}
+          totalProjects={scoredProjects.length}
+          totalSanctionedCr={Number(
+            (
+              scoredProjects.reduce((acc, p) => acc + (p.sanctionedAmountLakhs || 0), 0) /
+              100
+            ).toFixed(1)
+          )}
+          user={
+            currentUser
+              ? {
+                  email: currentUser.email,
+                  displayName: currentUser.displayName,
+                  role: currentUser.role,
+                }
+              : null
+          }
+        />
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => {
-                setIsCitizenPortal(false);
-                if (!currentUser) setAuthView('login');
-              }}
-              className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer"
-            >
-              <Shield className="w-4 h-4 text-amber-400" />
-              <span>Auditor / Official Console &rarr;</span>
-            </button>
-          </div>
-        </header>
-
-        {/* Citizen Portal Body */}
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-          {/* Hero Banner */}
-          <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
-            <div className="max-w-2xl relative z-10 space-y-3">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>MoSPI e-SAKSHI Public Audit Norms</span>
-              </span>
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                Inspect Public Works. Report Ghost Assets.
-              </h1>
-              <p className="text-slate-300 text-sm leading-relaxed">
-                Under the MPLADS Guidelines, every sanctioned public work requires a permanent stone board with MP details, budget, and completion dates. Verify assets in your neighborhood or report incomplete projects.
-              </p>
-            </div>
-          </div>
-
-          {/* Quick Search & Public Projects Table */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-2xs space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-bold text-slate-900">Public Works Registry</h2>
-                <p className="text-xs text-slate-500">Live data on community halls, solar microgrids, roads & water works</p>
-              </div>
-              <div className="w-full sm:w-72 relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Search work code, MP, area..."
-                  value={projectFilters.searchQuery}
-                  onChange={(e) => setProjectFilters({ ...projectFilters, searchQuery: e.target.value })}
-                  className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-
-            <ProjectTable
-              projects={filteredProjects}
-              onSelectProject={(p) => setSelectedProject(p)}
-              pageSize={8}
-            />
-          </div>
-
-          {/* Public Geographic Map View */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-2xs space-y-4">
-            <div>
-              <h2 className="text-lg font-bold text-slate-900">Geographic Asset Explorer</h2>
-              <p className="text-xs text-slate-500">Interactive GIS map showing project clusters and satellite locations</p>
-            </div>
-            <div className="h-[480px] rounded-xl overflow-hidden border border-slate-200">
-              <MapView
-                projects={scoredProjects}
-                onSelectProject={(p) => setSelectedProject(p)}
-              />
-            </div>
-          </div>
-
-          {/* Citizen Reality Check Submission Card */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs">
-            <div className="max-w-2xl space-y-5">
-              <div>
-                <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-700 mb-1">
-                  <Users className="w-4 h-4" />
-                  <span>Citizen Reality Check</span>
-                </div>
-                <h2 className="text-xl font-black text-slate-900">Report Ground Discrepancy</h2>
-                <p className="text-xs text-slate-500 mt-1">
-                  Did you visit a sanctioned work site and find missing boards, delayed construction, or non-existent assets? Submit a report directly to the vigilance oversight register.
-                </p>
-              </div>
-
-              {citizenSuccessMsg && (
-                <div className="p-3.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>{citizenSuccessMsg}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleSubmitCitizenReport} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                      Work Code or Project Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. MPLADS-VAR-2024-089 or Rampur Hall"
-                      value={citizenWorkCode}
-                      onChange={(e) => setCitizenWorkCode(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                      Discrepancy Category *
-                    </label>
-                    <select
-                      value={citizenIssueType}
-                      onChange={(e) => setCitizenIssueType(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                    >
-                      <option value="Missing Citizen Board">Missing Mandatory Citizen Board</option>
-                      <option value="Delayed Work">Halted or Delayed Construction</option>
-                      <option value="Non-Existent Work">Work Not Found on Site (Ghost Asset)</option>
-                      <option value="Substandard Quality">Substandard Materials / Quality</option>
-                      <option value="Private Property Misuse">Built on Private / Trust Property</option>
-                      <option value="Duplicate Sanction">Duplicate of State PWD Work</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                    Your Name (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Leave blank to remain anonymous"
-                    value={citizenName}
-                    onChange={(e) => setCitizenName(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                    Detailed Observation *
-                  </label>
-                  <textarea
-                    required
-                    rows={3}
-                    placeholder="Describe what you observed on site (e.g., plot is empty, work was halted 6 months ago, no signboard visible)..."
-                    value={citizenDescription}
-                    onChange={(e) => setCitizenDescription(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={citizenSubmitting}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer disabled:opacity-50"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>{citizenSubmitting ? 'Submitting...' : 'Submit Reality Check'}</span>
-                </button>
-              </form>
-            </div>
-          </div>
-        </main>
-
-        {/* Citizen Footer */}
-        <footer className="border-t border-slate-200 bg-white py-6 text-xs text-slate-500 text-center">
-          <div className="max-w-7xl mx-auto px-4">
-            MPLADS VigilAI Public Transparency &bull; MoSPI Scheme Guidelines v2023 &bull; Ground Accountability Framework
-          </div>
-        </footer>
-
-        {/* Project Details Modal */}
+        {/* Project Details Audit Drawer if clicked */}
         {selectedProject && (
           <ProjectDetails
             project={selectedProject}
             onClose={() => setSelectedProject(null)}
+            onUpdateInvestigation={handleUpdateInvestigation}
           />
         )}
       </div>
@@ -734,23 +572,14 @@ export function App() {
           {/* Active Tab Heading & Breadcrumbs */}
           <div className="flex items-center gap-3 overflow-hidden">
             <div>
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                MPLADS VigilAI Console
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                MPLADS VigilAI • Civic Intelligence System
               </div>
               <h1 className="text-sm sm:text-base font-black text-slate-900 truncate">
-                {activeTab === 'dashboard' && 'Executive Console & Risk Intelligence'}
-                {activeTab === 'inspection-priority' && 'Inspection Priority Queue (CVC Norms)'}
+                {activeTab === 'dashboard' && 'Executive Oversight Dashboard'}
                 {activeTab === 'projects' && 'Projects Master Registry'}
-                {activeTab === 'risk-center' && 'Forensic Risk Center'}
-                {activeTab === 'anomalies' && 'Statutory Anomaly Engine (MoSPI 2023)'}
-                {activeTab === 'map' && 'Geographic Intelligence & Spatial Cluster Map'}
-                {activeTab === 'contractors' && 'Contractor Profiles & Cartelization Visualizer'}
-                {activeTab === 'citizen-reports' && 'Citizen Reality Checks & Field Discrepancies'}
-                {activeTab === 'ai-assistant' && 'AI Vigilance Investigator & Query Engine'}
-                {activeTab === 'data-quality' && 'Data Quality Diagnostics & Field Audits'}
-                {activeTab === 'government-sync' && 'Government Data Sync (data.gov.in / e-SAKSHI)'}
-                {activeTab === 'audit-logs' && 'Forensic Audit Trail & Action History'}
-                {activeTab === 'settings' && 'Admin Center & Anomaly Model Configuration'}
+                {activeTab === 'map' && 'GIS Map Intelligence & Spatial Anomaly Radar'}
+                {activeTab === 'assistant-settings' && 'Grounded AI & System Settings'}
                 {activeTab === 'profile' && 'Auditor Credentials & Security Profile'}
               </h1>
             </div>
@@ -758,11 +587,22 @@ export function App() {
 
           {/* Actions & Sync State */}
           <div className="flex items-center gap-3 shrink-0">
+            {/* Quick Switch to Public Landing Portal */}
+            <button
+              id="header-public-portal-btn"
+              onClick={() => setActiveTab('landing')}
+              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
+              title="Return to Public Landing Page"
+            >
+              <Globe className="w-3.5 h-3.5 text-indigo-600" />
+              <span className="hidden md:inline">Public Portal</span>
+            </button>
+
             {/* Live Firestore indicator */}
             <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
               <span
                 className={`w-2 h-2 rounded-full ${
-                  isLiveConnected ? 'bg-emerald-500 animate-pulse' : 'bg-blue-500'
+                  isLiveConnected ? 'bg-emerald-500 animate-pulse' : 'bg-indigo-500'
                 }`}
               />
               <span>{isLiveConnected ? 'Live Cloud Sync' : 'Static Baseline'}</span>
@@ -772,7 +612,7 @@ export function App() {
             <button
               onClick={handleRunAudit}
               disabled={isAuditing}
-              className="px-3 py-1.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               title="Run algorithmic re-audit over all project records"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isAuditing ? 'animate-spin' : ''}`} />
@@ -794,341 +634,48 @@ export function App() {
 
         {/* 3. Primary Content Area Based on Active Tab */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl w-full mx-auto">
-          {/* Tab 1: Executive Dashboard Console */}
+          {/* View 2: Executive Oversight Dashboard */}
           {activeTab === 'dashboard' && (
-            <DashboardView
+            <Dashboard
               projects={scoredProjects}
-              onSelectProject={(p) => setSelectedProject(p)}
-              onNavigateToTab={(tab) => setActiveTab(tab)}
-              globalSearch={globalSearch}
-              setGlobalSearch={setGlobalSearch}
-              diagnosticSummary={diagnosticSummary}
+              constituencies={constituencies}
+              onInspectProject={(p) => setSelectedProject(p)}
+              onNavigateToProjects={() => setActiveTab('projects')}
+              onRefreshData={handleRunAudit}
+              isRefreshing={isAuditing}
+              userRole={currentUser?.role}
+              userEmail={currentUser?.email}
             />
           )}
 
-          {/* Tab 2: Inspection Priority Queue */}
-          {activeTab === 'inspection-priority' && (
-            <div className="space-y-6">
-              <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-2xs">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                  <div>
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 mb-1">
-                      <ClipboardList className="w-3.5 h-3.5" />
-                      <span>CVC Vigilance Priority Formula</span>
-                    </div>
-                    <h2 className="text-xl font-black text-slate-900">
-                      Ranked High-Risk Inspection Queue
-                    </h2>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Prioritized by composite forensic risk score, single-bid tender status, and citizen ground discrepancy
-                    </p>
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    High-Risk Targets: <strong className="text-rose-600 font-bold">{inspectionPriorityProjects.length}</strong>
-                  </div>
-                </div>
-
-                <div className="divide-y divide-slate-100">
-                  {inspectionPriorityProjects.map((p, idx) => {
-                    const score = p.overallRiskScore || p.riskScore || 0;
-                    const flags = p.anomalyFlags || p.detectedAnomalies || [];
-                    const topFlag = flags[0];
-
-                    return (
-                      <div
-                        key={p.id}
-                        className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-50/70 p-3 rounded-xl transition-colors cursor-pointer"
-                        onClick={() => setSelectedProject(p)}
-                      >
-                        <div className="flex items-start gap-3.5">
-                          <div className="w-8 h-8 rounded-xl bg-slate-900 text-white font-black text-xs flex items-center justify-center shrink-0 font-mono">
-                            #{idx + 1}
-                          </div>
-                          <div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
-                                {p.workCode}
-                              </span>
-                              <span className="font-bold text-sm text-slate-900">{p.title}</span>
-                              <RiskBadge score={score} />
-                            </div>
-                            <div className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-3">
-                              <span>MP: <strong className="text-slate-700">{p.mpName}</strong></span>
-                              <span>&bull;</span>
-                              <span>District: <strong className="text-slate-700">{p.district}, {p.state}</strong></span>
-                              <span>&bull;</span>
-                              <span>Sanctioned: <strong className="text-slate-700 font-mono">₹{p.sanctionedAmountLakhs} Lakhs</strong></span>
-                              <span>&bull;</span>
-                              <span>Vendor: <strong className="text-slate-700">{p.contractorName || 'Not Assigned'}</strong></span>
-                            </div>
-                            {topFlag && (
-                              <div className="mt-2 text-xs text-rose-700 bg-rose-50/80 px-2.5 py-1 rounded-lg border border-rose-200/60 inline-flex items-center gap-1.5">
-                                <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-600" />
-                                <span className="font-medium">Audit Concern: {topFlag.title}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedAuditProject(p);
-                            }}
-                            className="px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold border border-blue-200/80 transition-all cursor-pointer"
-                          >
-                            Audit Memo &rarr;
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Tab 3: Projects Master Registry */}
+          {/* View 3: Projects Master Registry */}
           {activeTab === 'projects' && (
-            <div className="space-y-4">
-              <FilterBar
-                filters={projectFilters}
-                onChange={setProjectFilters}
-                statesList={statesList}
-                districtsList={districtsList}
-                mpsList={mpsList}
-                categoriesList={categoriesList}
-                statusesList={statusesList}
-                totalResults={filteredProjects.length}
-              />
-              <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs">
-                <ProjectTable
-                  projects={filteredProjects}
-                  onSelectProject={(p) => setSelectedProject(p)}
-                  pageSize={12}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Tab 4 & 5: Risk Center & Anomaly Engine */}
-          {(activeTab === 'risk-center' || activeTab === 'anomalies') && (
-            <AnomalyScanner
-              projects={activeTab === 'risk-center' ? scoredProjects.filter(p => (p.overallRiskScore || p.riskScore || 0) >= 61) : scoredProjects}
-              onAuditProject={(p) => setSelectedAuditProject(p)}
-              onGenerateMemo={(p) => setSelectedAuditProject(p)}
-              onSelectProjectDetails={(p) => setSelectedProject(p)}
-            />
-          )}
-
-          {/* Tab 6: Geographic Intelligence Map */}
-          {activeTab === 'map' && (
-            <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">Geospatial Intelligence Map</h2>
-                  <p className="text-xs text-slate-500">Interactive India map with cluster markers and state risk boundaries</p>
-                </div>
-                <div className="text-xs text-slate-500">
-                  Total Map Assets: <strong className="text-slate-800 font-bold">{scoredProjects.length}</strong>
-                </div>
-              </div>
-              <div className="h-[650px] rounded-xl overflow-hidden border border-slate-200">
-                <MapView
-                  projects={scoredProjects}
-                  onSelectProject={(p) => setSelectedProject(p)}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Tab 7: Contractor Cartelization Visualizer */}
-          {activeTab === 'contractors' && (
-            <ContractorCartelVisualizer
+            <Projects
               projects={scoredProjects}
-              contractors={contractors}
-              onSelectProject={(p) => setSelectedProject(p)}
+              onInspectProject={(p) => setSelectedProject(p)}
             />
           )}
 
-          {/* Tab 8: Citizen Reality Checks */}
-          {activeTab === 'citizen-reports' && (
-            <div className="space-y-6">
-              <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-2xs space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 mb-1">
-                      <Users className="w-3.5 h-3.5" />
-                      <span>Citizen Oversight Register</span>
-                    </div>
-                    <h2 className="text-xl font-black text-slate-900">Citizen Reality Checks & Submissions</h2>
-                    <p className="text-xs text-slate-500">
-                      Crowdsourced field reports regarding unbuilt works, missing mandatory citizen signboards, and quality concerns
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setIsCitizenPortal(true)}
-                    className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer self-start"
-                  >
-                    <Globe className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Open Public Citizen View &rarr;</span>
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-bold text-blue-700 bg-blue-100/70 px-2 py-0.5 rounded">
-                        MPLADS-VAR-2024-089
-                      </span>
-                      <span className="text-[10px] text-slate-500">2 days ago</span>
-                    </div>
-                    <h3 className="text-sm font-bold text-slate-900">Missing Citizen Information Board</h3>
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                      Physical inspection at Rampur Village Chowk showed no permanent stone board installed with MP details, expenditure amounts, or completion dates as mandated by MoSPI Clause 6.4.
-                    </p>
-                    <div className="pt-2 flex items-center justify-between text-xs text-slate-500 border-t border-slate-200/60">
-                      <span>Submitted by: <strong>Ramesh Kumar</strong></span>
-                      <span className="text-amber-700 font-semibold">Under Investigation</span>
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-bold text-blue-700 bg-blue-100/70 px-2 py-0.5 rounded">
-                        MPLADS-BLR-2023-104
-                      </span>
-                      <span className="text-[10px] text-slate-500">5 days ago</span>
-                    </div>
-                    <h3 className="text-sm font-bold text-slate-900">Solar Microgrid Halted & Incomplete</h3>
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                      Disbursement of ₹24.0 Lakhs completed 11 months ago, but solar panels are lying uninstalled at Rohaniya block due to an unaddressed land dispute.
-                    </p>
-                    <div className="pt-2 flex items-center justify-between text-xs text-slate-500 border-t border-slate-200/60">
-                      <span>Submitted by: <strong>Anonymous Citizen</strong></span>
-                      <span className="text-rose-700 font-semibold">Flagged for Audit</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {/* View 4: Geospatial Map Intelligence */}
+          {activeTab === 'map' && (
+            <GeospatialMap
+              projects={scoredProjects}
+              onInspectProject={(p) => setSelectedProject(p)}
+            />
           )}
 
-          {/* Tab 9: AI Assistant & Investigator */}
-          {activeTab === 'ai-assistant' && (
-            <AiAssistantView
+          {/* View 5: AI Grounded Assistant & Settings */}
+          {activeTab === 'assistant-settings' && (
+            <AssistantAndSettings
               projects={scoredProjects}
               onSelectProjectByWorkCode={(code) => {
-                const found = scoredProjects.find((p) => p.workCode === code || p.id === code);
+                const found = scoredProjects.find(
+                  (p) => p.workCode === code || p.id === code
+                );
                 if (found) setSelectedProject(found);
               }}
-            />
-          )}
-
-          {/* Tab 10: Data Quality Diagnostics */}
-          {activeTab === 'data-quality' && (
-            <DataQualityView
-              projects={scoredProjects}
-              onSelectProject={(p) => setSelectedProject(p)}
-            />
-          )}
-
-          {/* Tab 11: Government Data Sync & Provenance */}
-          {activeTab === 'government-sync' && (
-            <div className="space-y-6">
-              <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-2xs space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
-                    <Database className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-black text-slate-900">Government Data Synchronization</h2>
-                    <p className="text-xs text-slate-500">MoSPI e-SAKSHI & Open Government Data Platform (data.gov.in) connectors</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
-                    <div className="text-xs text-slate-500 font-medium">Primary Data Source</div>
-                    <div className="text-base font-black text-slate-900 mt-1">MoSPI e-SAKSHI v2023</div>
-                    <div className="text-[11px] text-emerald-700 font-semibold mt-1">Official Master Data</div>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
-                    <div className="text-xs text-slate-500 font-medium">Secondary Source</div>
-                    <div className="text-base font-black text-slate-900 mt-1">data.gov.in MPLADS API</div>
-                    <div className="text-[11px] text-blue-700 font-semibold mt-1">Parliamentary Datasets</div>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
-                    <div className="text-xs text-slate-500 font-medium">Cloud Database</div>
-                    <div className="text-base font-black text-slate-900 mt-1">Firebase Firestore</div>
-                    <div className="text-[11px] text-purple-700 font-semibold mt-1">Real-time Multi-Auditor Sync</div>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="text-xs text-slate-500">
-                    Last synchronized with national registry: <strong>Today at {lastAuditTimestamp} IST</strong>
-                  </div>
-                  <button
-                    onClick={handleRunAudit}
-                    className="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    <span>Synchronize with Central MoSPI Registry</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Tab 12: Forensic Audit Trail */}
-          {activeTab === 'audit-logs' && (
-            <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-2xs space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center shrink-0">
-                  <Activity className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-black text-slate-900">Forensic Audit Trail</h2>
-                  <p className="text-xs text-slate-500">Tamper-evident log of all risk analyses, status changes, and memos</p>
-                </div>
-              </div>
-
-              <div className="divide-y divide-slate-100 mt-4 font-mono text-xs">
-                <div className="py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span className="text-slate-900 font-bold">SYSTEM_AUDIT_CYCLE_COMPLETED</span>
-                    <span className="text-slate-500 font-sans">Full algorithmic pass over {scoredProjects.length} records</span>
-                  </div>
-                  <span className="text-slate-400">{lastAuditTimestamp} IST</span>
-                </div>
-                <div className="py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="w-2 h-2 rounded-full bg-blue-500" />
-                    <span className="text-slate-900 font-bold">PROJECT_STATUS_UPDATE</span>
-                    <span className="text-slate-500 font-sans">MPLADS-VAR-2024-089 set to "Under Investigation"</span>
-                  </div>
-                  <span className="text-slate-400">14:15 IST</span>
-                </div>
-                <div className="py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="w-2 h-2 rounded-full bg-amber-500" />
-                    <span className="text-slate-900 font-bold">ANOMALY_FLAG_RAISED</span>
-                    <span className="text-slate-500 font-sans">Potential duplicate sanction detected in Varanasi</span>
-                  </div>
-                  <span className="text-slate-400">13:40 IST</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Tab 13: Settings & Admin Center */}
-          {activeTab === 'settings' && (
-            <SettingsView
               onRefreshData={handleRunAudit}
-              isLoading={isAuditing}
+              isLoadingData={isAuditing}
               userRole={currentUser?.role || 'standard'}
               isRoleLoading={isRoleLoading}
             />
