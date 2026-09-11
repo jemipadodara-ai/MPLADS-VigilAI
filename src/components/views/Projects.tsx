@@ -14,9 +14,11 @@ import {
   FileSpreadsheet,
   Download,
   Info,
+  ShieldCheck,
+  FileDown,
 } from 'lucide-react';
 import { MPLADProject, RiskLevel } from '../../types';
-import { getExplainableRiskReason } from './Dashboard';
+import { computeProjectRisk, exportProjectsToCSV } from '../../utils/riskEngine';
 
 interface ProjectsViewProps {
   projects: MPLADProject[];
@@ -64,21 +66,11 @@ export const Projects: React.FC<ProjectsViewProps> = ({ projects, onInspectProje
           }
         }
 
-        // Risk Level filter: All, High, Medium, Low (also handles Critical)
+        // Standardized Risk Level filter: High (70-100), Medium (40-69), Low (0-39)
         if (selectedRisk !== 'All') {
-          const score = p.overallRiskScore || 0;
-          if (selectedRisk === 'High') {
-            if (p.riskLevel !== 'High' && p.riskLevel !== 'Critical' && score < 50) {
-              return false;
-            }
-          } else if (selectedRisk === 'Medium') {
-            if (p.riskLevel !== 'Medium' && (score < 25 || score >= 50)) {
-              return false;
-            }
-          } else if (selectedRisk === 'Low') {
-            if (p.riskLevel !== 'Low' && score >= 25) {
-              return false;
-            }
+          const risk = computeProjectRisk(p);
+          if (risk.riskLevel !== selectedRisk) {
+            return false;
           }
         }
 
@@ -93,7 +85,7 @@ export const Projects: React.FC<ProjectsViewProps> = ({ projects, onInspectProje
       })
       .sort((a, b) => {
         if (sortBy === 'risk') {
-          return (b.overallRiskScore || 0) - (a.overallRiskScore || 0);
+          return computeProjectRisk(b).riskScore - computeProjectRisk(a).riskScore;
         }
         if (sortBy === 'budget') {
           return (b.sanctionedAmountLakhs || 0) - (a.sanctionedAmountLakhs || 0);
@@ -111,6 +103,11 @@ export const Projects: React.FC<ProjectsViewProps> = ({ projects, onInspectProje
     setSelectedRisk('All');
     setSelectedStatus('All');
     setSortBy('risk');
+  };
+
+  const handleExportFiltered = () => {
+    const filename = `mplads_audit_projects_${selectedRisk !== 'All' ? selectedRisk.toLowerCase() + '_' : ''}${new Date().toISOString().slice(0, 10)}.csv`;
+    exportProjectsToCSV(filteredProjects, filename);
   };
 
   return (
@@ -136,10 +133,19 @@ export const Projects: React.FC<ProjectsViewProps> = ({ projects, onInspectProje
             </p>
           </div>
 
-          <div className="flex items-center gap-3 self-start md:self-auto">
+          <div className="flex flex-wrap items-center gap-3 self-start md:self-auto">
             <span className="text-xs font-semibold text-slate-500">
               Showing <strong className="text-slate-900 font-mono">{filteredProjects.length}</strong> of {projects.length} works
             </span>
+            <button
+              id="projects-export-csv-btn"
+              onClick={handleExportFiltered}
+              className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Export filtered project records as CSV"
+            >
+              <FileDown className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Export CSV</span>
+            </button>
           </div>
         </div>
 
@@ -184,9 +190,9 @@ export const Projects: React.FC<ProjectsViewProps> = ({ projects, onInspectProje
               className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 cursor-pointer font-medium"
             >
               <option value="All">All Risk Levels</option>
-              <option value="High">High Risk (50-100)</option>
-              <option value="Medium">Medium Risk (25-49)</option>
-              <option value="Low">Low Risk (0-24)</option>
+              <option value="High">High Risk (70-100)</option>
+              <option value="Medium">Medium Risk (40-69)</option>
+              <option value="Low">Low Risk (0-39)</option>
             </select>
           </div>
 
@@ -256,10 +262,11 @@ export const Projects: React.FC<ProjectsViewProps> = ({ projects, onInspectProje
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredProjects.map((project) => {
-                  const score = project.overallRiskScore || 0;
-                  const isCritical = score >= 70;
-                  const isHigh = score >= 45 && score < 70;
-                  const auditInsight = getExplainableRiskReason(project);
+                  const risk = computeProjectRisk(project);
+                  const score = risk.riskScore;
+                  const isCritical = risk.riskLevel === 'High';
+                  const isMedium = risk.riskLevel === 'Medium';
+                  const auditInsight = risk.primaryReason;
 
                   return (
                     <tr
@@ -332,14 +339,14 @@ export const Projects: React.FC<ProjectsViewProps> = ({ projects, onInspectProje
                           className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold font-mono ${
                             isCritical
                               ? 'bg-rose-100 text-rose-800 border border-rose-200'
-                              : isHigh
+                              : isMedium
                               ? 'bg-amber-100 text-amber-800 border border-amber-200'
                               : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                           }`}
                         >
                           {score}/100
                           <span className="text-[10px] font-sans font-semibold">
-                            {isCritical ? 'High' : isHigh ? 'Medium' : 'Low'}
+                            {risk.riskLevel}
                           </span>
                         </span>
                       </td>
@@ -348,7 +355,7 @@ export const Projects: React.FC<ProjectsViewProps> = ({ projects, onInspectProje
                       <td className="py-3.5 px-4">
                         <div className="flex items-start gap-1.5 max-w-md">
                           <Info className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${
-                            isCritical ? 'text-rose-600' : isHigh ? 'text-amber-600' : 'text-emerald-600'
+                            isCritical ? 'text-rose-600' : isMedium ? 'text-amber-600' : 'text-emerald-600'
                           }`} />
                           <span className="text-xs text-slate-700 leading-snug font-medium">
                             {auditInsight}
@@ -377,6 +384,17 @@ export const Projects: React.FC<ProjectsViewProps> = ({ projects, onInspectProje
             </table>
           </div>
         )}
+      </div>
+
+      {/* Data Transparency & Public Disclosures Notice */}
+      <div className="bg-slate-100/80 rounded-2xl border border-slate-200 p-4 sm:p-5 text-xs text-slate-600 space-y-1.5">
+        <div className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+          <ShieldCheck className="w-4 h-4 text-indigo-600" />
+          <span>Data Transparency &amp; Public Records Notice</span>
+        </div>
+        <p className="text-slate-500 leading-relaxed text-[11px]">
+          All project records, sanctioned outlays, and milestone execution percentages are aggregated from public disclosures under the MPLADS Scheme guidelines published by MoSPI and respective District Nodal Authorities. Algorithmic flags and risk scores are intended for prioritization of physical verification and do not constitute formal legal findings.
+        </p>
       </div>
     </div>
   );

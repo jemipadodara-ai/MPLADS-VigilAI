@@ -18,12 +18,11 @@ export const RiskScore: React.FC<RiskScoreProps> = ({
 }) => {
   const cleanScore = Math.min(100, Math.max(0, Math.round(score || 0)));
 
-  // Determine level if not provided
+  // Determine level if not provided or to ensure exact score alignment
   let computedLevel: RiskLevel = level || 'Low';
-  if (!level) {
-    if (cleanScore >= 81) computedLevel = 'Critical';
-    else if (cleanScore >= 61) computedLevel = 'High';
-    else if (cleanScore >= 31) computedLevel = 'Medium';
+  if (!level || (level === 'Low' && cleanScore >= 40) || (level === 'Medium' && cleanScore >= 70)) {
+    if (cleanScore >= 70) computedLevel = 'High';
+    else if (cleanScore >= 40) computedLevel = 'Medium';
     else computedLevel = 'Low';
   }
 

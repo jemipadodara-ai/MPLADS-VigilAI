@@ -3,6 +3,7 @@ import {
   Globe,
   LayoutDashboard,
   FolderGit2,
+  Users,
   MapPin,
   Sparkles,
   ChevronLeft,
@@ -19,6 +20,7 @@ export type ActiveTab =
   | 'landing'
   | 'dashboard'
   | 'projects'
+  | 'contractors'
   | 'map'
   | 'assistant-settings'
   | 'profile';
@@ -30,6 +32,7 @@ interface SidebarProps {
   onToggleCollapse: () => void;
   criticalAlertsCount?: number;
   totalProjectsCount?: number;
+  totalContractorsCount?: number;
   user?: {
     email?: string | null;
     displayName?: string | null;
@@ -59,7 +62,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const isAdmin = user?.role === 'admin';
 
-  // 5 Essential Views defined by user requirements
+  // Core Navigation Items
   const navItems: NavItem[] = [
     {
       id: 'landing',
@@ -76,6 +79,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'Projects Registry',
       icon: FolderGit2,
       badge: totalProjectsCount,
+    },
+    {
+      id: 'contractors',
+      label: 'Contractor Performance',
+      icon: Users,
     },
     {
       id: 'map',
@@ -163,8 +171,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {!isCollapsed && (
           <div className="px-4 py-2.5 bg-slate-50/70 border-b border-slate-100 flex items-center justify-between text-[11px]">
             <span className="text-slate-500 font-medium truncate">Ahmedabad / District Nodal</span>
-            <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold text-[9px] border border-emerald-200">
-              Live
+            <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-bold text-[9px] border border-slate-200">
+              Official
             </span>
           </div>
         )}

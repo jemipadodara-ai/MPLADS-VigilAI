@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { MPLADProject, InvestigationStatus, CitizenVerification } from '../types';
 import { RiskScore } from './RiskScore';
 import { RiskBadge } from './RiskBadge';
 import { AnomalyCard } from './AnomalyCard';
+import { computeProjectRisk, exportProjectsToCSV } from '../utils/riskEngine';
 import {
   X,
   Sparkles,
@@ -25,6 +26,8 @@ import {
   UserCheck,
   Shield,
   HelpCircle,
+  FileText,
+  AlertCircle,
 } from 'lucide-react';
 
 interface ProjectDetailsProps {
@@ -168,6 +171,16 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
   // Money Pipeline Breakdown Point Detection
   const hasPipelineBreakdown = spentPct > 50 && (project.completionPercentage || 0) < 40;
 
+  // Compute unified risk analysis
+  const riskAnalysis = useMemo(() => computeProjectRisk(project), [project]);
+
+  const handleExportProject = () => {
+    exportProjectsToCSV(
+      [project],
+      `project_${(project.workCode || project.id).replace(/[^a-zA-Z0-9_-]/g, '_')}_risk_audit.csv`
+    );
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex justify-end">
       {/* Backdrop overlay */}
@@ -207,12 +220,12 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => window.print()}
-              className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-xs font-semibold"
-              title="Print or save PDF"
+              onClick={handleExportProject}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-2xs cursor-pointer transition-colors"
+              title="Download single project risk audit report as CSV"
             >
-              <FileDown className="w-3.5 h-3.5" />
-              <span>Export</span>
+              <FileDown className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Export Report</span>
             </button>
             <button
               onClick={onClose}
@@ -226,20 +239,209 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
 
         {/* Scrollable Content */}
         <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
-          {/* Data Provenance Badges Banner */}
-          <div className="flex items-center gap-2 text-[11px] flex-wrap p-2.5 bg-slate-50 rounded-2xl border border-slate-200/80">
-            <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold">
-              SOURCE: Official Government Data (MoSPI)
-            </span>
-            <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold">
-              AI ENGINE: Risk &amp; Anomaly Models
-            </span>
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">
-              COMMUNITY: {verifications.length} Citizen Verifications
-            </span>
+          {/* 1. TOP SECTION: RISK PROFILE (MOST IMPORTANT INFORMATION) */}
+          <div className={`p-5 rounded-2xl border transition-all ${
+            riskAnalysis.riskLevel === 'High'
+              ? 'bg-rose-50/50 border-rose-300 ring-1 ring-rose-400/20'
+              : riskAnalysis.riskLevel === 'Medium'
+              ? 'bg-amber-50/50 border-amber-300 ring-1 ring-amber-400/20'
+              : 'bg-emerald-50/40 border-emerald-300 ring-1 ring-emerald-400/20'
+          }`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
+              <div className="space-y-1">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                  <AlertTriangle className={`w-4 h-4 ${
+                    riskAnalysis.riskLevel === 'High' ? 'text-rose-600' : riskAnalysis.riskLevel === 'Medium' ? 'text-amber-600' : 'text-emerald-600'
+                  }`} />
+                  <span>Project Risk Assessment</span>
+                </div>
+                <div className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                  {riskAnalysis.riskTierLabel.toUpperCase()}
+                </div>
+              </div>
+
+              {/* Large Risk Badge & Gauge Score */}
+              <div className="flex items-center gap-3">
+                <RiskBadge level={riskAnalysis.riskLevel} size="lg" />
+                <div className="px-4 py-2 rounded-xl bg-white border border-slate-200 shadow-2xs text-center min-w-[90px]">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Risk Score</span>
+                  <span className="text-xl font-black font-mono text-slate-900">
+                    {riskAnalysis.riskScore}<span className="text-xs font-semibold text-slate-400">/100</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* A. Why is this project risky? (Risk Reasons) */}
+            <div className="mt-4 space-y-2">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                <AlertCircle className="w-3.5 h-3.5 text-slate-500" />
+                <span>Why is this project flagged? (Risk Reasons)</span>
+              </h3>
+              <div className="p-3.5 bg-white rounded-xl border border-slate-200 space-y-2">
+                {riskAnalysis.reasons.map((reason, idx) => (
+                  <div key={idx} className="flex items-start gap-2">
+                    <span className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
+                      riskAnalysis.riskLevel === 'High' ? 'bg-rose-500' : riskAnalysis.riskLevel === 'Medium' ? 'bg-amber-500' : 'bg-emerald-500'
+                    }`} />
+                    <span className="text-xs text-slate-800 font-medium leading-relaxed">
+                      {reason}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* B. Risk Evidence & Quantitative Telemetry */}
+            <div className="mt-4 space-y-2">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                <Activity className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Risk Evidence &amp; Financial Discrepancy Telemetry</span>
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Approved Sanction</span>
+                  <div className="text-sm font-bold font-mono text-slate-900">
+                    ₹{riskAnalysis.evidence.sanctionedAmountLakhs.toFixed(2)} Lakh
+                  </div>
+                </div>
+
+                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Actual Spend</span>
+                  <div className="text-sm font-bold font-mono text-slate-900">
+                    ₹{riskAnalysis.evidence.expenditureAmountLakhs.toFixed(2)} Lakh
+                  </div>
+                  {riskAnalysis.evidence.costOverrunPct > 0 && (
+                    <span className="inline-block text-[10px] font-bold text-rose-600">
+                      +{riskAnalysis.evidence.costOverrunPct}% Cost Overrun
+                    </span>
+                  )}
+                </div>
+
+                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Physical Progress</span>
+                  <div className="text-sm font-bold text-slate-900">
+                    {riskAnalysis.evidence.completionPercentage}% Done
+                  </div>
+                  <span className="text-[10px] text-slate-500">
+                    Disbursed: {riskAnalysis.evidence.fundUtilizationPct}%
+                  </span>
+                </div>
+
+                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Timeline Lag</span>
+                  <div className="text-sm font-bold text-slate-900">
+                    {riskAnalysis.evidence.delayDays > 0 ? `${riskAnalysis.evidence.delayDays} Days Overdue` : 'On Schedule'}
+                  </div>
+                  <span className="text-[10px] text-slate-500 truncate block">
+                    Tender: {riskAnalysis.evidence.tenderType}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* C. Recommended Review / Action */}
+            <div className="mt-4 p-3.5 bg-white rounded-xl border border-indigo-200/90 shadow-2xs space-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+                Recommended Auditor Action / Next Step
+              </span>
+              <p className="text-xs text-slate-800 font-semibold leading-relaxed">
+                {riskAnalysis.recommendedAction}
+              </p>
+            </div>
           </div>
 
-          {/* 1. 5 VISUAL HEALTH INDICATORS BAR */}
+          {/* 2. PROJECT DETAILS SECTION */}
+          <div className="space-y-3">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5 text-slate-400" />
+              <span>Administrative Project Details</span>
+            </div>
+
+            <div className="bg-slate-50/80 rounded-2xl border border-slate-200/90 p-4 sm:p-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-3.5 gap-x-4 text-xs">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Work Code / ID</span>
+                  <strong className="text-slate-900 font-mono font-bold text-xs">
+                    {project.workCode || project.id}
+                  </strong>
+                </div>
+
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">District &amp; State</span>
+                  <span className="text-slate-800 font-medium">
+                    {project.district || project.constituency}, {project.state}
+                  </span>
+                </div>
+
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Category / Sector</span>
+                  <span className="text-slate-800 font-medium">
+                    {project.category || 'Public Infrastructure'}
+                  </span>
+                </div>
+
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Sanctioned Budget</span>
+                  <span className="text-slate-900 font-mono font-bold">
+                    ₹{project.sanctionedAmountLakhs.toFixed(2)} Lakh
+                  </span>
+                </div>
+
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Actual Expenditure</span>
+                  <span className="text-slate-900 font-mono font-bold">
+                    ₹{project.expenditureAmountLakhs.toFixed(2)} Lakh
+                  </span>
+                </div>
+
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Certified Progress</span>
+                  <span className="text-slate-800 font-medium">
+                    {project.completionPercentage}% Certified Complete
+                  </span>
+                </div>
+
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Sanction Date</span>
+                  <span className="text-slate-700">
+                    {project.sanctionDate || 'Not Specified'}
+                  </span>
+                </div>
+
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Target Completion</span>
+                  <span className="text-slate-700">
+                    {project.expectedCompletionDate || 'Not Specified'}
+                  </span>
+                </div>
+
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Executing Contractor</span>
+                  <span className="text-slate-900 font-medium truncate block">
+                    {project.contractorName || 'Open Procurement / Unassigned'}
+                  </span>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Implementing Agency</span>
+                  <span className="text-slate-800 font-medium">
+                    {project.implementingAgency || 'District Rural Development Agency (DRDA)'}
+                  </span>
+                </div>
+
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Sponsoring MP Office</span>
+                  <span className="text-slate-800 font-medium">
+                    {project.mpName || 'Lok Sabha / Rajya Sabha MP'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. 5 VISUAL HEALTH INDICATORS BAR */}
           <div className="space-y-2">
             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               5-Point Digital Health Assessment
@@ -282,7 +484,7 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
             </div>
           </div>
 
-          {/* 2. FOLLOW THE MONEY PIPELINE */}
+          {/* 4. FOLLOW THE MONEY PIPELINE */}
           <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
@@ -355,67 +557,7 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
             </div>
           </div>
 
-          {/* 3. Top Metric Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <RiskScore
-              score={project.overallRiskScore || 0}
-              level={project.riskLevel}
-              size="xl"
-              showBar={true}
-            />
-
-            <div className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200/70 flex flex-col justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Financial Outlay
-              </span>
-              <div className="my-2">
-                <div className="text-2xl font-bold text-slate-900 font-mono">
-                  ₹{project.expenditureAmountLakhs.toFixed(1)}{' '}
-                  <span className="text-sm font-normal text-slate-500">
-                    / ₹{project.sanctionedAmountLakhs.toFixed(1)} Lakhs
-                  </span>
-                </div>
-                <div className="text-xs text-slate-500 mt-1">
-                  Budget Disbursed: <strong className="text-slate-800">{spentPct}%</strong>
-                </div>
-              </div>
-              <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                <div
-                  className="bg-blue-600 h-full rounded-full"
-                  style={{ width: `${Math.min(100, spentPct)}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200/70 flex flex-col justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Physical Milestones
-              </span>
-              <div className="my-2">
-                <div className="text-2xl font-bold text-slate-900">
-                  {project.completionPercentage}%{' '}
-                  <span className="text-xs font-normal text-slate-500">certified complete</span>
-                </div>
-                <div className="text-xs text-slate-500 mt-1">
-                  Agency: <strong className="text-slate-800">{project.implementingAgency}</strong>
-                </div>
-              </div>
-              <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                <div
-                  className={`h-full rounded-full ${
-                    project.completionPercentage >= 100
-                      ? 'bg-emerald-500'
-                      : project.completionPercentage < 40
-                      ? 'bg-rose-500'
-                      : 'bg-blue-600'
-                  }`}
-                  style={{ width: `${Math.min(100, project.completionPercentage)}%` }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* 4. DUAL AI EXPLAINER */}
+          {/* 5. DUAL AI EXPLAINER */}
           <div className="bg-gradient-to-r from-blue-50/90 to-indigo-50/80 rounded-2xl p-4 border border-blue-200/80 space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div className="flex items-center gap-2 text-blue-900 font-bold text-xs">

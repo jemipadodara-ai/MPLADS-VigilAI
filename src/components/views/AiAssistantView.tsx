@@ -31,7 +31,7 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
     {
       id: 'msg-welcome',
       sender: 'assistant',
-      text: 'Hello. I am VigilAI, an AI Monitoring & Risk Intelligence Assistant grounded in your live MPLADS dataset. Ask me about specific projects, high-risk works, contractors, expenditure variances, or statutory compliance rules.',
+      text: 'Hello. I am VigilAI, an AI Monitoring & Risk Intelligence Assistant grounded in your MPLADS project records. Ask me about specific projects, high-risk works, contractors, expenditure variances, or statutory compliance rules.',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);

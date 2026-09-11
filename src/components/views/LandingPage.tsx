@@ -483,8 +483,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
+      {/* 6. Data Transparency & Provenance Disclaimer */}
+      <section className="py-10 bg-white border-b border-slate-200/80">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="rounded-2xl bg-slate-50 border border-slate-200 p-6 sm:p-8 space-y-3">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-indigo-600" />
+              <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+                Civic Data Transparency &amp; Provenance Disclaimer
+              </h4>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              MPLADS VigilAI aggregates public disclosures from Ministry of Statistics and Programme Implementation (MoSPI) e-SAKSHI portals, District Nodal administrative releases, and Public Financial Management System (PFMS) expenditure records. Algorithmic discrepancy flags, risk scores, and vendor performance indices are synthesized strictly to assist oversight authorities and citizens in prioritizing audit reviews. Risk indicators represent administrative flags for physical and document verification under MoSPI Guidelines and do not constitute legal conclusions or allegations of wrongdoing.
+            </p>
+            <div className="pt-2 flex flex-wrap items-center gap-4 text-[11px] text-slate-500 font-medium">
+              <span>• Source: MoSPI Open Portals &amp; District Sanction Orders</span>
+              <span>• Governance: GFR 2017 Rule 144 &amp; MPLADS Clause 6.4</span>
+              <span>• Mode: Public Civic Transparency &amp; Administrative Review</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
-      <footer className="py-8 bg-white border-t border-slate-200/80 text-center text-xs text-slate-500">
+      <footer className="py-8 bg-white text-center text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-800">MPLADS VigilAI</span>
@@ -492,7 +514,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <span>Civic Intelligence &amp; Public Fund Transparency</span>
           </div>
           <div className="text-slate-400 text-[11px]">
-            Data synced from MoSPI e-SAKSHI &amp; District Measurement Books.
+            Data harmonized from MoSPI e-SAKSHI, PFMS &amp; District Measurement Books.
           </div>
         </div>
       </footer>

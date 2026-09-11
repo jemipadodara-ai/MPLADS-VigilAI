@@ -22,6 +22,7 @@ import { Sidebar, ActiveTab } from './components/Sidebar';
 import { LandingPage } from './components/views/LandingPage';
 import { Dashboard } from './components/views/Dashboard';
 import { Projects } from './components/views/Projects';
+import { Contractors } from './components/views/Contractors';
 import { GeospatialMap } from './components/views/GeospatialMap';
 import { AssistantAndSettings } from './components/views/AssistantAndSettings';
 import { DataQualityView } from './components/views/DataQualityView';
@@ -547,6 +548,8 @@ export function App() {
         isCollapsed={isCollapsed}
         onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
         criticalAlertsCount={criticalAlertsCount}
+        totalProjectsCount={scoredProjects.length}
+        totalContractorsCount={contractors.length}
         user={
           currentUser
             ? {
@@ -578,6 +581,7 @@ export function App() {
               <h1 className="text-sm sm:text-base font-black text-slate-900 truncate">
                 {activeTab === 'dashboard' && 'Executive Oversight Dashboard'}
                 {activeTab === 'projects' && 'Projects Master Registry'}
+                {activeTab === 'contractors' && 'Contractor Performance & Vendor Registry'}
                 {activeTab === 'map' && 'GIS Map Intelligence & Spatial Anomaly Radar'}
                 {activeTab === 'assistant-settings' && 'Grounded AI & System Settings'}
                 {activeTab === 'profile' && 'Auditor Credentials & Security Profile'}
@@ -641,6 +645,7 @@ export function App() {
               constituencies={constituencies}
               onInspectProject={(p) => setSelectedProject(p)}
               onNavigateToProjects={() => setActiveTab('projects')}
+              onNavigateToContractors={() => setActiveTab('contractors')}
               onRefreshData={handleRunAudit}
               isRefreshing={isAuditing}
               userRole={currentUser?.role}
@@ -652,6 +657,15 @@ export function App() {
           {activeTab === 'projects' && (
             <Projects
               projects={scoredProjects}
+              onInspectProject={(p) => setSelectedProject(p)}
+            />
+          )}
+
+          {/* View 3b: Contractor Performance & Vendor Registry */}
+          {activeTab === 'contractors' && (
+            <Contractors
+              projects={scoredProjects}
+              contractorProfiles={contractors}
               onInspectProject={(p) => setSelectedProject(p)}
             />
           )}

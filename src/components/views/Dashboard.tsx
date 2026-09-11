@@ -15,14 +15,18 @@ import {
   Search,
   ChevronRight,
   UserCheck,
+  Users,
+  Info,
 } from 'lucide-react';
 import { MPLADProject, ConstituencySummary } from '../../types';
+import { computeProjectRisk } from '../../utils/riskEngine';
 
 interface DashboardProps {
   projects: MPLADProject[];
   constituencies?: ConstituencySummary[];
   onInspectProject: (project: MPLADProject) => void;
   onNavigateToProjects: () => void;
+  onNavigateToContractors?: () => void;
   onRefreshData?: () => void;
   isRefreshing?: boolean;
   userRole?: string;
@@ -34,66 +38,7 @@ interface DashboardProps {
  * Formulates explicit, human-understandable audit diagnostics for every project
  */
 export function getExplainableRiskReason(p: MPLADProject): string {
-  // 1. Explicit note or anomaly if present in dataset
-  if (p.notes && (
-    p.notes.includes('Discrepancy') ||
-    p.notes.includes('exceeds') ||
-    p.notes.includes('delayed') ||
-    p.notes.includes('duplicate') ||
-    p.notes.includes('halted') ||
-    p.notes.includes('Missing') ||
-    p.notes.includes('Cross-check')
-  )) {
-    return p.notes;
-  }
-  if (p.detectedAnomalies && p.detectedAnomalies.length > 0) {
-    const da = p.detectedAnomalies[0];
-    return typeof da === 'string' ? da : (da.description || da.title || 'Audit Anomaly Detected');
-  }
-  if (p.anomalyFlags && p.anomalyFlags.length > 0) {
-    const flag = p.anomalyFlags[0];
-    return typeof flag === 'string' ? flag : (flag.title || flag.description || 'Audit Anomaly Detected');
-  }
-
-  // 2. Financial Discrepancy calculation
-  const sanctioned = p.sanctionedAmountLakhs || 0;
-  const disbursed = p.expenditureAmountLakhs || 0;
-  const progress = p.completionPercentage || 0;
-  const spentPct = sanctioned > 0 ? Math.round((disbursed / sanctioned) * 100) : 0;
-
-  if (spentPct > 0 && spentPct - progress >= 20) {
-    return `Financial Discrepancy: Disbursement at ${spentPct}% while Physical Progress is ${progress}%`;
-  }
-
-  // 3. Timeline Violation check
-  const anyProj = p as any;
-  if (p.status === 'Delayed' || (anyProj.delayDays && anyProj.delayDays > 0)) {
-    const days = anyProj.delayDays || 64;
-    return `Timeline Violation: Milestone execution delayed by ${days} days against target`;
-  }
-
-  // 4. Contractor concentration or risk
-  if (anyProj.contractorRiskScore && anyProj.contractorRiskScore >= 60) {
-    return `Contractor Risk: Single vendor holds multiple overlapping tenders with delivery lag`;
-  }
-
-  // 5. Statutory compliance checks
-  if (p.hasMandatoryCitizenBoard === false) {
-    return `Statutory Non-Compliance: MoSPI Clause 6.4 mandatory citizen information stone missing`;
-  }
-  if (p.hasUtilizationCertificate === false && spentPct >= 75) {
-    return `Regulatory Lag: Final Utilization Certificate (UC) pending submission`;
-  }
-
-  if (p.status === 'Under Investigation') {
-    return `Active Inquiry: Discrepancy flagged between Measurement Book and physical inspection`;
-  }
-
-  if (progress === 100) {
-    return `Reconciled & Complete: Physical completion and financial accounts certified`;
-  }
-
-  return `Milestone Synchronized: Physical execution (${progress}%) aligned with budget allocation`;
+  return computeProjectRisk(p).primaryReason;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -101,6 +46,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   constituencies = [],
   onInspectProject,
   onNavigateToProjects,
+  onNavigateToContractors,
   onRefreshData,
   isRefreshing = false,
   userRole = 'Executive Auditor',
@@ -125,13 +71,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   }, [projects]);
 
   const highRiskProjects = useMemo(() => {
-    return projects.filter(
-      (p) =>
-        (p.overallRiskScore !== undefined && p.overallRiskScore >= 55) ||
-        p.riskLevel === 'Critical' ||
-        p.riskLevel === 'High' ||
-        p.status === 'Under Investigation'
-    );
+    return projects.filter((p) => computeProjectRisk(p).riskLevel === 'High');
   }, [projects]);
 
   const highRiskCount = highRiskProjects.length;
@@ -139,7 +79,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // 2. Prioritize review queue by risk score descending
   const priorityQueue = useMemo(() => {
     return [...projects]
-      .sort((a, b) => (b.overallRiskScore || 0) - (a.overallRiskScore || 0))
+      .sort((a, b) => computeProjectRisk(b).riskScore - computeProjectRisk(a).riskScore)
       .slice(0, 8);
   }, [projects]);
 
@@ -173,7 +113,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <span className="text-slate-300">•</span>
             {/* User Status Pill */}
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               <span>{userEmail ? `${userEmail} (${userRole})` : 'Active Auditor Session'}</span>
             </div>
           </div>
@@ -181,21 +121,33 @@ export const Dashboard: React.FC<DashboardProps> = ({
             Executive Oversight Dashboard
           </h1>
           <p className="text-xs sm:text-sm text-slate-500">
-            Real-time telemetry, fiscal velocity analytics, and prioritized forensic audit queues across monitored parliamentary works.
+            Automated risk telemetry, fiscal velocity analytics, and prioritized forensic audit queues across monitored parliamentary works.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
           {onRefreshData && (
             <button
-              id="dashboard-sync-btn"
+              id="dashboard-refresh-btn"
               onClick={onRefreshData}
               disabled={isRefreshing}
               className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
-              title="Synchronize Firestore projects"
+              title="Refresh project audit records"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-              <span>{isRefreshing ? 'Syncing...' : 'Sync Data'}</span>
+              <span>{isRefreshing ? 'Refreshing...' : 'Refresh Data'}</span>
+            </button>
+          )}
+
+          {onNavigateToContractors && (
+            <button
+              id="dashboard-explore-contractors-btn"
+              onClick={onNavigateToContractors}
+              className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Inspect executing vendors and performance track records"
+            >
+              <Users className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Contractors</span>
             </button>
           )}
 
@@ -286,7 +238,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </span>
           </div>
           <p className="mt-1 text-xs text-slate-500 font-medium">
-            MoSPI e-SAKSHI &amp; PFMS synced
+            MoSPI e-SAKSHI &amp; PFMS verified records
           </p>
         </div>
       </div>
@@ -435,9 +387,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </thead>
             <tbody className="divide-y divide-slate-100">
               {priorityQueue.map((project) => {
-                const score = project.overallRiskScore || 0;
-                const isCritical = score >= 70;
-                const riskReason = getExplainableRiskReason(project);
+                const risk = computeProjectRisk(project);
+                const score = risk.riskScore;
+                const isCritical = risk.riskLevel === 'High';
+                const riskReason = risk.primaryReason;
 
                 return (
                   <tr
@@ -533,6 +486,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* 5. Data Transparency & Civic Compliance Footer Note */}
+      <div className="bg-slate-100/80 rounded-2xl border border-slate-200 p-4 sm:p-5 text-xs text-slate-600 space-y-1.5">
+        <div className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+          <ShieldCheck className="w-4 h-4 text-indigo-600" />
+          <span>Data Provenance &amp; Civic Audit Transparency</span>
+        </div>
+        <p className="text-slate-500 leading-relaxed text-[11px]">
+          All statistics, milestone delivery rates, and risk indices are calculated strictly from public records aligned with MoSPI e-SAKSHI disclosures, District Nodal sanctions, and Public Financial Management System (PFMS) expenditure logs. Risk scores are advisory audit prioritization tools intended to highlight projects requiring physical site verification, and do not constitute formal legal findings.
+        </p>
       </div>
     </div>
   );

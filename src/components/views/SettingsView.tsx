@@ -248,7 +248,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         <div>
           <h2 className="text-xl font-bold text-slate-900 tracking-tight">Admin Control Center</h2>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
-            Role-based access management, live database controls, and vigilance engine tuning
+            Role-based access management, database controls, and vigilance engine tuning
           </p>
         </div>
 
@@ -304,13 +304,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
           <div className="flex flex-wrap items-center gap-2">
             <button
-              id="admin-force-resync-btn"
+              id="admin-refresh-btn"
               onClick={onRefreshData}
               disabled={isLoading}
               className="px-3.5 py-2 bg-slate-900 text-white rounded-xl text-xs font-semibold hover:bg-slate-800 disabled:opacity-50 transition-colors inline-flex items-center gap-1.5 shadow-2xs cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-              <span>Force Re-sync</span>
+              <span>{isLoading ? 'Reloading...' : 'Refresh Records'}</span>
             </button>
 
             <button
@@ -338,8 +338,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
         <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Live Firestore Synchronized</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span>Firestore Database Connected</span>
           </div>
           <div className="text-[11px] text-slate-400">
             Registered collections: <span className="font-mono text-slate-700">users, projects, constituencies, alerts, citizen_reports</span>

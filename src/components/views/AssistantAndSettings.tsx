@@ -42,7 +42,7 @@ export const AssistantAndSettings: React.FC<AssistantAndSettingsProps> = ({
           </h1>
           <p className="text-xs text-slate-500">
             {activeSubTab === 'assistant'
-              ? 'Query the live dataset, extract anomalous procurement trends, or request natural language work breakdowns.'
+              ? 'Query the project dataset, extract anomalous procurement trends, or request natural language work breakdowns.'
               : 'Calibrate statutory risk weights, manage role-based access control, and manage Firestore persistence.'}
           </p>
         </div>
