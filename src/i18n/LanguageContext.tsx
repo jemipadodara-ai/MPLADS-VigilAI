@@ -40,19 +40,146 @@ function detectBrowserLanguage(): LanguageCode {
   return 'en';
 }
 
-interface LanguageContextType {
-  language: LanguageCode;
-  setLanguage: (lang: LanguageCode) => void;
-  currentLanguageInfo: LanguageInfo;
-  languages: LanguageInfo[];
-  t: (keyPath: string, fallbackText?: string) => string;
-  dict: TranslationDictionary;
+// ---------------------------------------------------------------------------
+// 1. REVERSE INDEX: Maps strings from ANY language back to canonical English
+// ---------------------------------------------------------------------------
+const toEnglishMap = new Map<string, string>();
+const toEnglishMultiList: Array<{
+  foreignLower: string;
+  regex: RegExp;
+  en: string;
+  len: number;
+}> = [];
+
+function registerReverse(enText: string, foreignText: string) {
+  if (!enText || !foreignText || typeof enText !== 'string' || typeof foreignText !== 'string') return;
+  const enTrim = enText.trim();
+  const foreignTrim = foreignText.trim();
+  if (!enTrim || !foreignTrim || enTrim === foreignTrim) return;
+
+  toEnglishMap.set(foreignTrim, enTrim);
+  toEnglishMap.set(foreignTrim.toLowerCase(), enTrim);
+
+  if (/\s|[-/–—]/.test(foreignTrim) && foreignTrim.length >= 2) {
+    toEnglishMultiList.push({
+      foreignLower: foreignTrim.toLowerCase(),
+      regex: new RegExp(foreignTrim.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi'),
+      en: enTrim,
+      len: foreignTrim.length,
+    });
+  }
 }
 
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+// Index all translation files and vocabulary
+for (const l of ['hi', 'gu', 'mr', 'bn', 'pa'] as LanguageCode[]) {
+  const dict = TRANSLATIONS[l];
+  if (dict && dict.phrases) {
+    for (const [enKey, transVal] of Object.entries(dict.phrases)) {
+      registerReverse(enKey, transVal);
+    }
+  }
+  const vocab = (VOCABULARY as any)[l];
+  if (vocab) {
+    for (const [enKey, transVal] of Object.entries(vocab)) {
+      registerReverse(enKey, transVal as string);
+    }
+  }
+}
 
-// Precompute translation maps and multi-word phrase patterns per language
-interface LanguageEngine {
+const CANONICAL_PRIORITY: Record<string, string> = {
+  'स्वीकृत': 'Sanctioned',
+  'મંજૂર': 'Sanctioned',
+  'मंजूर': 'Sanctioned',
+  'অনুমোদিত': 'Sanctioned',
+  'ਮਨਜ਼ੂਰ': 'Sanctioned',
+  'पूर्ण': 'Completed',
+  'પૂર્ણ': 'Completed',
+  'संपन्न': 'Completed',
+  'ਪੂਰਾ': 'Completed',
+  'प्रगति पर': 'In Progress',
+  'પ્રગતિમાં': 'In Progress',
+  'प्रगतीपथावर': 'In Progress',
+  'চলমান': 'In Progress',
+  'ਚੱਲ ਰਿਹਾ ਹੈ': 'In Progress',
+  'विलंबित': 'Delayed',
+  'વિલંબિત': 'Delayed',
+  'বিলম্বিত': 'Delayed',
+  'ਦੇਰੀ ਨਾਲ': 'Delayed',
+  'समीक्षाधीन': 'Under Review',
+  'સમીક્ષા હેઠળ': 'Under Review',
+  'पुनरावलोकनाधीन': 'Under Review',
+  'পর্যালোচনাধীন': 'Under Review',
+  'ਸਮੀਖਿਆ ਅਧੀਨ': 'Under Review',
+  'अवरुद्ध': 'Stalled',
+  'અટકેલું': 'Stalled',
+  'रखडलेले': 'Stalled',
+  'স্থবির': 'Stalled',
+  'ਰੁਕਿਆ ਹੋਇਆ': 'Stalled',
+  'जांच के अधीन': 'Under Investigation',
+  'તપાસ હેઠળ': 'Under Investigation',
+  'तपासाधीन': 'Under Investigation',
+  'তদন্তাধীন': 'Under Investigation',
+  'ਜਾਂਚ ਅਧੀਨ': 'Under Investigation',
+  'अति गंभीर': 'Critical',
+  'अत्यधिक गंभीर जोखिम': 'Critical Risk',
+  'उच्च जोखिम': 'High Risk',
+  'मध्यम जोखिम': 'Medium Risk',
+  'कम जोखिम': 'Low Risk',
+  'सभी जोखिम': 'All Risks',
+  'पी० तत्काल': 'P0 Immediate',
+  'पी१ उच्च': 'P1 High',
+  'पी२ सामान्य': 'P2 Normal',
+  'पी३ निगरानी': 'P3 Monitor',
+};
+
+for (const [k, v] of Object.entries(CANONICAL_PRIORITY)) {
+  toEnglishMap.set(k.trim(), v);
+  toEnglishMap.set(k.trim().toLowerCase(), v);
+}
+
+// Sort multi-word reverse list descending by length to match longer phrases first
+toEnglishMultiList.sort((a, b) => b.len - a.len);
+
+export function toEnglish(str: string): string {
+  if (!str || typeof str !== 'string') return str;
+  const trimmed = str.trim();
+  if (!trimmed) return str;
+
+  // Exact match
+  if (toEnglishMap.has(trimmed)) {
+    return str.replace(trimmed, toEnglishMap.get(trimmed)!);
+  }
+  if (toEnglishMap.has(trimmed.toLowerCase())) {
+    return str.replace(trimmed, toEnglishMap.get(trimmed.toLowerCase())!);
+  }
+
+  // Multi-word phrase replacements
+  let out = str;
+  for (const item of toEnglishMultiList) {
+    if (out.toLowerCase().includes(item.foreignLower)) {
+      out = out.replace(item.regex, item.en);
+    }
+  }
+
+  // Token replacement for any remaining non-ASCII tokens
+  out = out.replace(/[^\x00-\x7F\s,.:;!?'"()\[\]{}\/\\-]+/g, (token) => {
+    const tTrim = token.trim();
+    if (toEnglishMap.has(tTrim)) {
+      return toEnglishMap.get(tTrim)!;
+    }
+    if (toEnglishMap.has(tTrim.toLowerCase())) {
+      return toEnglishMap.get(tTrim.toLowerCase())!;
+    }
+    return token;
+  });
+
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// 2. FORWARD ENGINES: Maps Canonical English to target language
+// ---------------------------------------------------------------------------
+interface ForwardEngine {
   textMap: Map<string, string>;
   textMapLower: Map<string, string>;
   multiWordList: Array<{
@@ -60,14 +187,14 @@ interface LanguageEngine {
     regex: RegExp;
     translation: string;
   }>;
-  translate: (raw: string) => string;
+  translate: (canonicalEn: string) => string;
 }
 
-const ENGINE_CACHE = new Map<LanguageCode, LanguageEngine>();
+const FORWARD_ENGINES = new Map<LanguageCode, ForwardEngine>();
 
-function getEngine(lang: LanguageCode): LanguageEngine {
-  if (ENGINE_CACHE.has(lang)) {
-    return ENGINE_CACHE.get(lang)!;
+function getForwardEngine(lang: LanguageCode): ForwardEngine {
+  if (FORWARD_ENGINES.has(lang)) {
+    return FORWARD_ENGINES.get(lang)!;
   }
 
   const textMap = new Map<string, string>();
@@ -75,13 +202,13 @@ function getEngine(lang: LanguageCode): LanguageEngine {
   const multiWordList: Array<{ lower: string; regex: RegExp; translation: string }> = [];
 
   if (lang === 'en') {
-    const engine: LanguageEngine = {
+    const engine: ForwardEngine = {
       textMap,
       textMapLower,
       multiWordList,
-      translate: (s) => s,
+      translate: (s) => toEnglish(s),
     };
-    ENGINE_CACHE.set(lang, engine);
+    FORWARD_ENGINES.set(lang, engine);
     return engine;
   }
 
@@ -111,7 +238,6 @@ function getEngine(lang: LanguageCode): LanguageEngine {
     }
   }
 
-  // Sort multi-word phrases by length descending to match longer phrases first
   rawMultiList.sort((a, b) => b.len - a.len);
 
   for (const item of rawMultiList) {
@@ -123,29 +249,26 @@ function getEngine(lang: LanguageCode): LanguageEngine {
     });
   }
 
-  const translate = (str: string): string => {
-    if (!str || typeof str !== 'string') return str;
-    const trimmed = str.trim();
-    if (!trimmed) return str;
+  const translate = (canonicalEn: string): string => {
+    if (!canonicalEn || typeof canonicalEn !== 'string') return canonicalEn;
+    const trimmed = canonicalEn.trim();
+    if (!trimmed) return canonicalEn;
 
-    // 1. Exact match (case preserved or lowercase)
     if (textMap.has(trimmed)) {
-      return str.replace(trimmed, textMap.get(trimmed)!);
+      return canonicalEn.replace(trimmed, textMap.get(trimmed)!);
     }
     const lower = trimmed.toLowerCase();
     if (textMapLower.has(lower)) {
-      return str.replace(trimmed, textMapLower.get(lower)!);
+      return canonicalEn.replace(trimmed, textMapLower.get(lower)!);
     }
 
-    // 2. Multi-word phrase replacements
-    let out = str;
+    let out = canonicalEn;
     for (const item of multiWordList) {
       if (out.toLowerCase().includes(item.lower)) {
         out = out.replace(item.regex, item.translation);
       }
     }
 
-    // 3. Word token replacement & transliteration fallback
     out = out.replace(/\b[A-Za-z]+(?:'[A-Za-z]+)?\b/g, (token) => {
       const tLower = token.toLowerCase();
       if (textMapLower.has(tLower)) {
@@ -157,16 +280,48 @@ function getEngine(lang: LanguageCode): LanguageEngine {
     return out;
   };
 
-  const engine: LanguageEngine = {
+  const engine: ForwardEngine = {
     textMap,
     textMapLower,
     multiWordList,
     translate,
   };
 
-  ENGINE_CACHE.set(lang, engine);
+  FORWARD_ENGINES.set(lang, engine);
   return engine;
 }
+
+// ---------------------------------------------------------------------------
+// 3. UNIVERSAL TRANSLATE: Converts from ANY language to ANY target language
+// ---------------------------------------------------------------------------
+export function universalTranslate(rawText: string, targetLang: LanguageCode): string {
+  if (!rawText || typeof rawText !== 'string') return rawText;
+  const trimmed = rawText.trim();
+  if (!trimmed) return rawText;
+
+  // Step 1: Normalize any language into Canonical English
+  const canonicalEn = toEnglish(rawText);
+
+  // Step 2: If target is English, we are done
+  if (targetLang === 'en') {
+    return canonicalEn;
+  }
+
+  // Step 3: Forward translate canonical English into target language
+  const forwardEngine = getForwardEngine(targetLang);
+  return forwardEngine.translate(canonicalEn);
+}
+
+interface LanguageContextType {
+  language: LanguageCode;
+  setLanguage: (lang: LanguageCode) => void;
+  currentLanguageInfo: LanguageInfo;
+  languages: LanguageInfo[];
+  t: (keyPath: string, fallbackText?: string) => string;
+  dict: TranslationDictionary;
+}
+
+const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<LanguageCode>(() => {
@@ -196,12 +351,11 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
-  // Universal Non-Destructive DOM Text Translator
+  // Universal Symmetrical DOM Text Translator
   useEffect(() => {
     if (typeof document === 'undefined') return;
 
     document.documentElement.lang = language;
-    const engine = getEngine(language);
 
     const translateNode = (node: Node) => {
       if (node.nodeType === Node.TEXT_NODE) {
@@ -216,13 +370,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const currentVal = textNode.nodeValue || '';
         if (!currentVal.trim()) return;
 
-        // Save pristine original text on first encounter
-        if ((textNode as any).__vigilai_orig === undefined) {
-          (textNode as any).__vigilai_orig = currentVal;
-        }
-        const orig = (textNode as any).__vigilai_orig;
-
-        const targetVal = language === 'en' ? orig : engine.translate(orig);
+        const targetVal = universalTranslate(currentVal, language);
         if (textNode.nodeValue !== targetVal) {
           (textNode as any).__vigilai_translating = true;
           textNode.nodeValue = targetVal;
@@ -238,11 +386,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (tag === 'input' || tag === 'textarea') {
           const input = el as HTMLInputElement | HTMLTextAreaElement;
           if (input.placeholder) {
-            if ((input as any).__vigilai_orig_ph === undefined) {
-              (input as any).__vigilai_orig_ph = input.placeholder;
-            }
-            const origPh = (input as any).__vigilai_orig_ph;
-            const targetPh = language === 'en' ? origPh : engine.translate(origPh);
+            const targetPh = universalTranslate(input.placeholder, language);
             if (input.placeholder !== targetPh) {
               input.placeholder = targetPh;
             }
@@ -251,11 +395,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         // Element title tooltip
         if (el.title) {
-          if ((el as any).__vigilai_orig_title === undefined) {
-            (el as any).__vigilai_orig_title = el.title;
-          }
-          const origTitle = (el as any).__vigilai_orig_title;
-          const targetTitle = language === 'en' ? origTitle : engine.translate(origTitle);
+          const targetTitle = universalTranslate(el.title, language);
           if (el.title !== targetTitle) {
             el.title = targetTitle;
           }
@@ -265,11 +405,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (el.hasAttribute('aria-label')) {
           const aria = el.getAttribute('aria-label') || '';
           if (aria) {
-            if ((el as any).__vigilai_orig_aria === undefined) {
-              (el as any).__vigilai_orig_aria = aria;
-            }
-            const origAria = (el as any).__vigilai_orig_aria;
-            const targetAria = language === 'en' ? origAria : engine.translate(origAria);
+            const targetAria = universalTranslate(aria, language);
             if (el.getAttribute('aria-label') !== targetAria) {
               el.setAttribute('aria-label', targetAria);
             }
@@ -293,17 +429,14 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           const target = mutation.target as Text;
           if ((target as any).__vigilai_translating) continue;
 
-          if (language !== 'en') {
-            const current = target.nodeValue || '';
-            if (/[A-Za-z]/.test(current)) {
-              (target as any).__vigilai_orig = current;
-              const translated = engine.translate(current);
-              if (target.nodeValue !== translated) {
-                (target as any).__vigilai_translating = true;
-                target.nodeValue = translated;
-                (target as any).__vigilai_translating = false;
-              }
-            }
+          const current = target.nodeValue || '';
+          if (!current.trim()) continue;
+
+          const targetVal = universalTranslate(current, language);
+          if (target.nodeValue !== targetVal) {
+            (target as any).__vigilai_translating = true;
+            target.nodeValue = targetVal;
+            (target as any).__vigilai_translating = false;
           }
         }
       }
@@ -328,13 +461,27 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return TRANSLATIONS[language] || en;
   }, [language]);
 
-  const engine = useMemo(() => getEngine(language), [language]);
-
   // Translation helper: t('keyPath') or t('Exact English Phrase')
   const t = useCallback(
     (keyPath: string, fallbackText?: string): string => {
       if (language === 'en') {
-        return fallbackText || keyPath;
+        if (en.phrases && typeof en.phrases[keyPath] === 'string') {
+          return en.phrases[keyPath];
+        }
+        const parts = keyPath.split('.');
+        let current: any = en;
+        for (const part of parts) {
+          if (current && typeof current === 'object' && part in current) {
+            current = current[part];
+          } else {
+            current = undefined;
+            break;
+          }
+        }
+        if (typeof current === 'string') {
+          return current;
+        }
+        return toEnglish(fallbackText || keyPath);
       }
 
       // 1. Direct phrase lookup in current dictionary
@@ -363,11 +510,11 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return current;
       }
 
-      // 4. Translate the fallbackText or keyPath through the engine
+      // 4. Translate source through universalTranslate
       const source = fallbackText || keyPath;
-      return engine.translate(source);
+      return universalTranslate(source, language);
     },
-    [dict, language, engine]
+    [dict, language]
   );
 
   const contextValue = useMemo<LanguageContextType>(
