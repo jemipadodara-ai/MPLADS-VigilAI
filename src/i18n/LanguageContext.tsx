@@ -9,11 +9,8 @@ import { pa } from './translations/pa';
 
 export const AVAILABLE_LANGUAGES: LanguageInfo[] = [
   { code: 'en', name: 'English', nativeName: 'English', flag: '🇬🇧' },
-  { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', flag: '🇮🇳' },
+  { code: 'hi', name: 'Hindi', nativeName: 'हिंदी', flag: '🇮🇳' },
   { code: 'gu', name: 'Gujarati', nativeName: 'ગુજરાતી', flag: '🇮🇳' },
-  { code: 'mr', name: 'Marathi', nativeName: 'मराठी', flag: '🇮🇳' },
-  { code: 'bn', name: 'Bengali', nativeName: 'বাংলা', flag: '🇮🇳' },
-  { code: 'pa', name: 'Punjabi', nativeName: 'ਪੰਜਾਬੀ', flag: '🇮🇳' },
 ];
 
 const TRANSLATIONS: Record<LanguageCode, TranslationDictionary> = {
@@ -25,7 +22,16 @@ const TRANSLATIONS: Record<LanguageCode, TranslationDictionary> = {
   pa,
 };
 
-const STORAGE_KEY = 'vigilai_language';
+const STORAGE_KEY = 'mplads_language';
+const LEGACY_STORAGE_KEY = 'vigilai_language';
+
+function detectBrowserLanguage(): LanguageCode {
+  if (typeof window === 'undefined' || !window.navigator) return 'en';
+  const browserLang = (navigator.language || (navigator as any).userLanguage || '').toLowerCase();
+  if (browserLang.startsWith('hi')) return 'hi';
+  if (browserLang.startsWith('gu')) return 'gu';
+  return 'en';
+}
 
 interface LanguageContextType {
   language: LanguageCode;
@@ -52,14 +58,14 @@ for (const langKey of Object.keys(TRANSLATIONS) as LanguageCode[]) {
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<LanguageCode>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY) as LanguageCode | null;
+      const saved = (localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY)) as LanguageCode | null;
       if (saved && TRANSLATIONS[saved]) {
         return saved;
       }
     } catch (e) {
       console.warn('Failed to load language preference:', e);
     }
-    return 'en';
+    return detectBrowserLanguage();
   });
 
   const setLanguage = useCallback((newLang: LanguageCode) => {
@@ -67,7 +73,10 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setLanguageState(newLang);
       try {
         localStorage.setItem(STORAGE_KEY, newLang);
-        document.documentElement.lang = newLang;
+        localStorage.setItem(LEGACY_STORAGE_KEY, newLang);
+        if (typeof document !== 'undefined') {
+          document.documentElement.lang = newLang;
+        }
       } catch (e) {
         console.warn('Failed to persist language preference:', e);
       }

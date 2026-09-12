@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   X,
   Sparkles,
@@ -28,6 +29,7 @@ export const ProjectAuditModal: React.FC<ProjectAuditModalProps> = ({
   onClose,
   initialAuditResult,
 }) => {
+  const { language } = useLanguage();
   const [activeTab, setActiveTab] = useState<'audit' | 'memo'>('audit');
   const [auditResult, setAuditResult] = useState<ProjectAuditResult | null>(initialAuditResult || null);
   const [memoText, setMemoText] = useState<string>('');
@@ -43,7 +45,7 @@ export const ProjectAuditModal: React.FC<ProjectAuditModalProps> = ({
       const res = await fetch('/api/ai/audit-project', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ project }),
+        body: JSON.stringify({ project, language }),
       });
       const data = await res.json();
       if (data.analysis) {
@@ -64,7 +66,7 @@ export const ProjectAuditModal: React.FC<ProjectAuditModalProps> = ({
       const res = await fetch('/api/ai/generate-memo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ project }),
+        body: JSON.stringify({ project, language }),
       });
       const data = await res.json();
       if (data.memo) {

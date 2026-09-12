@@ -1816,7 +1816,7 @@ app.post("/api/citizen-report", async (req, res) => {
 // API: Forensic Audit of a Specific Project
 app.post("/api/ai/audit-project", async (req, res) => {
   try {
-    const { project } = req.body;
+    const { project, language = "en" } = req.body;
     if (!project) {
       return res.status(400).json({ error: "Project data is required" });
     }
@@ -1828,6 +1828,13 @@ app.post("/api/ai/audit-project", async (req, res) => {
         source: "rule-engine",
         analysis: generateRuleBasedAudit(project),
       });
+    }
+
+    let auditLangInstruction = "";
+    if (language === "hi") {
+      auditLangInstruction = "\nCRITICAL LANGUAGE MANDATE: All human-readable output text in the JSON (summary, detectedAnomalies title and finding, statutoryRecommendations, evidenceRequested) MUST be formulated in natural, formal Hindi (हिंदी) suitable for official Indian audits. Keep technical JSON keys, work codes, IDs, and numeric values intact.";
+    } else if (language === "gu") {
+      auditLangInstruction = "\nCRITICAL LANGUAGE MANDATE: All human-readable output text in the JSON (summary, detectedAnomalies title and finding, statutoryRecommendations, evidenceRequested) MUST be formulated in natural, formal Gujarati (ગુજરાતી) suitable for official Indian audits. Keep technical JSON keys, work codes, IDs, and numeric values intact.";
     }
 
     const prompt = `You are a Senior Vigilance Officer and Forensic Auditor specializing in the Member of Parliament Local Area Development Scheme (MPLADS) under the Ministry of Statistics and Programme Implementation (MoSPI), Government of India.
@@ -1842,6 +1849,7 @@ Evaluate against MPLADS 2023 Guidelines:
 3. Is there duplicate work suspicion, contractor cartelization, or cost inflation?
 4. Are timeline delays, unspent funds, or geo-tagging discrepancies present?
 5. Provide an Anomaly Risk Score from 0 (completely compliant) to 100 (critical fraud/irregularity).
+${auditLangInstruction}
 
 Respond in JSON format matching this structure:
 {
@@ -1910,7 +1918,7 @@ Respond in JSON format matching this structure:
 // API: Interactive Forensic Inquiries & Investigator (Grounded in Firebase records)
 app.post("/api/ai/investigate", async (req, res) => {
   try {
-    const { query, datasetSummary, contextProjects } = req.body;
+    const { query, datasetSummary, contextProjects, language = "en" } = req.body;
     if (!query) {
       return res.status(400).json({ error: "Query is required" });
     }
@@ -1967,13 +1975,20 @@ app.post("/api/ai/investigate", async (req, res) => {
       });
     }
 
+    let languageMandate = "";
+    if (language === "hi") {
+      languageMandate = "\n6. LANGUAGE REQUIREMENT: You MUST formulate your entire response in professional, natural Hindi (हिंदी). Use standard Indian administrative terms (विकास कार्य, वित्तीय विसंगति, जोखिम स्कोर, संवीक्षा, निधि उपयोग). Do NOT translate technical Work Codes (e.g. MPLADS/2023-24/...) or currency numbers.";
+    } else if (language === "gu") {
+      languageMandate = "\n6. LANGUAGE REQUIREMENT: You MUST formulate your entire response in professional, natural Gujarati (ગુજરાતી). Use standard Indian administrative terms (વિકાસ કાર્ય, નાણાકીય અસામાન્યતા, જોખમ સ્કોર, ચકાસણી, ભંડોળનો ઉપયોગ). Do NOT translate technical Work Codes (e.g. MPLADS/2023-24/...) or currency numbers.";
+    }
+
     const systemInstruction = `You are "VigilAI Assistant", an AI Monitoring and Risk Intelligence analyst for India's MPLAD Scheme.
 CRITICAL MANDATES:
 1. You must NOT invent or hallucinate data, projects, contractors, or figures.
 2. Ground all answers STRICTLY in the provided project records.
 3. If the required information is not present in the provided records, state clearly: "I could not find enough data in the available MPLAD dataset."
 4. Do NOT state that fraud has been legally proven. Use objective vigilance terminology: "Fraud Risk Indicator", "Anomaly Detected", "Requires Verification", "Financial Irregularity", "Progress Anomaly".
-5. Structure answers cleanly with bullet points, citing actual Work Codes and amounts.`;
+5. Structure answers cleanly with bullet points, citing actual Work Codes and amounts.${languageMandate}`;
 
     const prompt = `Constituency & Dataset Context:
 Total Projects Monitored: ${allAvailableProjects.length}
@@ -2017,7 +2032,7 @@ Provide an objective, grounded response based ONLY on the matching records above
 // ===========================================================================
 app.post("/api/ai/chat", async (req, res) => {
   try {
-    const { query, user, conversationHistory = [] } = req.body;
+    const { query, user, conversationHistory = [], language = "en" } = req.body;
     if (!query || typeof query !== "string") {
       return res.status(400).json({ error: "Query is required" });
     }
@@ -2149,6 +2164,13 @@ app.post("/api/ai/chat", async (req, res) => {
       });
     }
 
+    let chatLanguageMandate = "";
+    if (language === "hi") {
+      chatLanguageMandate = "\n7. LANGUAGE MANDATE: You MUST formulate your entire response in professional, natural Hindi (हिंदी). Use standard Indian administrative terms. Keep technical Work Codes, project IDs, and numeric values unchanged.";
+    } else if (language === "gu") {
+      chatLanguageMandate = "\n7. LANGUAGE MANDATE: You MUST formulate your entire response in professional, natural Gujarati (ગુજરાતી). Use standard Indian administrative terms. Keep technical Work Codes, project IDs, and numeric values unchanged.";
+    }
+
     const systemInstruction = `You are "VigilAI Assistant", an AI Monitoring, Vigilance and Risk Intelligence analyst for India's MPLAD Scheme.
 CURRENT USER:
 - Role: ${userContext.role}
@@ -2166,7 +2188,7 @@ CRITICAL MANDATES:
    - DISTRICT: Project-level verification, officer assignment, contractor follow-up.
    - MP: Constituency performance, citizen feedback, project planning.
    - CITIZEN: Public status, completed works, transparency in local area.
-6. If an Action Proposal is attached, explain why this action is recommended and ask the officer to click "CONFIRM ACTION" to formalize it.`;
+6. If an Action Proposal is attached, explain why this action is recommended and ask the officer to click "CONFIRM ACTION" to formalize it.${chatLanguageMandate}`;
 
     const prompt = `User Query: "${query}"
 
@@ -2387,6 +2409,79 @@ app.post("/api/ai/confirm-action", async (req, res) => {
   } catch (error: any) {
     console.error("Action confirmation error:", error);
     res.status(500).json({ error: "Failed to confirm action", details: error?.message });
+  }
+});
+
+// ===========================================================================
+// STATUTORY VIGILANCE MEMORANDUM GENERATOR (/api/ai/generate-memo)
+// ===========================================================================
+app.post("/api/ai/generate-memo", async (req, res) => {
+  try {
+    const { project, language = "en" } = req.body;
+    if (!project) {
+      return res.status(400).json({ error: "Project data is required" });
+    }
+
+    const workCode = project.workCode || project.id || "MPLADS-WORK";
+    const title = project.title || "Infrastructure Project";
+    const district = project.district || project.constituency || "District Nodal Zone";
+    const sanctioned = project.sanctionedAmountLakhs || 0;
+    const spent = project.expenditureAmountLakhs || 0;
+    const contractor = project.contractorName || "Executing Contractor";
+
+    let langMandate = "";
+    if (language === "hi") {
+      langMandate = "\nCRITICAL REQUIREMENT: Write the entire official statutory memorandum in formal, high-quality administrative Hindi (हिंदी) suitable for Government of India / MoSPI. Use terms like 'कार्यालय ज्ञापन', 'संसद सदस्य स्थानीय क्षेत्र विकास योजना', 'सतर्कता प्रभाग', 'वित्तीय अनियमितता'. Keep technical work code, amounts in ₹, and dates intact.";
+    } else if (language === "gu") {
+      langMandate = "\nCRITICAL REQUIREMENT: Write the entire official statutory memorandum in formal, high-quality administrative Gujarati (ગુજરાતી) suitable for Government of India / MoSPI. Use terms like 'કાર્યાલય જ્ઞાપન', 'સંસદ સભ્ય સ્થાનિક વિસ્તાર વિકાસ યોજના', 'તકેદારી વિભાગ', 'નાણાકીય અનિયમિતતા'. Keep technical work code, amounts in ₹, and dates intact.";
+    }
+
+    if (ai) {
+      const prompt = `You are the Chief Vigilance Officer for the MPLAD Scheme under MoSPI, Government of India.
+Draft a formal, legally grounded Statutory Vigilance Notice / Official Audit Memorandum regarding:
+Project: ${title}
+Work Code: ${workCode}
+District: ${district}
+Sanctioned Amount: ₹${sanctioned} Lakhs
+Expenditure: ₹${spent} Lakhs
+Contractor: ${contractor}
+Risk Indicators: ${JSON.stringify(project.anomalyFlags || project.detectedAnomalies || ["Cost vs Physical Progress Mismatch"])}
+${langMandate}
+
+Include:
+1. Memorandum Reference Number and Date
+2. Statutory Subject Line
+3. Executive Summary of Detected Anomaly / Ground Discrepancy
+4. Specific MoSPI MPLADS Guideline Violations Cited
+5. Directive to District Authority / Executing Agency (14-day compliance window)
+6. Official Sign-off Block`;
+
+      const { response } = await generateGeminiContentWithFallback({
+        contents: prompt,
+        config: {
+          temperature: 0.2,
+        },
+      });
+
+      if (response && response.text) {
+        return res.json({ success: true, memo: response.text });
+      }
+    }
+
+    // Fallback template in requested language
+    let fallbackMemo = "";
+    if (language === "hi") {
+      fallbackMemo = `भारत सरकार\nसांख्यिकी एवं कार्यक्रम कार्यान्वयन मंत्रालय (MoSPI)\nएमपीलैड्स राज्य सतर्कता एवं निगरानी प्रभाग\nनई दिल्ली - 110001\n\nपत्रांक संख्या: MoSPI/MPLADS/VIGIL/${workCode.replace(/[^A-Z0-9-]/gi, '')}/${new Date().getFullYear()}\nदिनांक: ${new Date().toLocaleDateString('hi-IN', { day: '2-digit', month: 'long', year: 'numeric' })}\n\nकार्यालय ज्ञापन\n\nविषय: एमपीलैड्स कार्य संहिता: ${workCode} ("${title}") में वित्तीय विसंगति एवं निष्पादन जांच हेतु वैधानिक नोटिस।\n\n1. एमपीलैड्स दिशानिर्देश 2023 के प्रावधानों एवं वित्तीय संवीक्षा नियमों के अंतर्गत जिला प्रशासन ${district} द्वारा अनुशंसित उक्त विकास कार्य का तकनीकी एवं वित्तीय परीक्षण किया गया है।\n2. अभिलेखों के परीक्षणोपरांत स्वीकृत राशि ₹${sanctioned} लाख के सापेक्ष ₹${spent} लाख का व्यय एवं भौतिक प्रगति का असंतुलन परिलक्षित हुआ है। ठेकेदार फर्म ${contractor} द्वारा प्रस्तुत माप पुस्तिका एवं धरातलीय साक्ष्य अपर्याप्त पाए गए हैं।\n3. सक्षम प्राधिकारी के निर्देशानुसार संबंधित कार्यदायी एजेंसी एवं जिला नोडल अधिकारी को निर्देशित किया जाता है कि 14 कार्यदिवसों के भीतर विस्तृत आख्या एवं अद्यतन उपयोगिता प्रमाण-पत्र (UC) सतर्कता पोर्टल पर प्रस्तुत करें।\n4. अनुपालन न होने की स्थिति में अग्रिम किश्त के आहरण पर तत्काल प्रभाव से रोक लगा दी जाएगी।\n\n(हस्ताक्षर एवं मुहर)\nनिदेशक / संयुक्त सचिव (एमपीलैड्स सतर्कता प्रभाग)\nसांख्यिकी एवं कार्यक्रम कार्यान्वयन मंत्रालय, भारत सरकार`;
+    } else if (language === "gu") {
+      fallbackMemo = `ભારત સરકાર\nસાંખ્યિકી અને કાર્યક્રમ અમલીકરણ મંત્રાલય (MoSPI)\nએમપીલેડ્સ રાજ્ય તકેદારી અને દેખરેખ વિભાગ\nનવી દિલ્હી - 110001\n\nસંદર્ભ ક્રમાંક: MoSPI/MPLADS/VIGIL/${workCode.replace(/[^A-Z0-9-]/gi, '')}/${new Date().getFullYear()}\nતારીખ: ${new Date().toLocaleDateString('gu-IN', { day: '2-digit', month: 'long', year: 'numeric' })}\n\nકાર્યાલય જ્ઞાપન\n\nવિષય: એમપીલેડ્સ કાર્ય સંહિતા: ${workCode} ("${title}") માં નાણાકીય અસામાન્યતા અને અમલીકરણ તપાસ બાબતે વૈધાનિક નોટિસ.\n\n1. એમપીલેડ્સ માર્ગદર્શિકા 2023 ની જોગવાઈઓ અને નાણાકીય ચકાસણી નિયમો હેઠળ જિલ્લા પ્રશાસન ${district} દ્વારા ભલામણ કરાયેલ વિકાસ કાર્યની તકનીકી અને નાણાકીય તપાસ કરવામાં આવી છે.\n2. દસ્તાવેજોની ચકાસણી પર મંજૂર રકમ ₹${sanctioned} લાખ સામે ₹${spent} લાખનો ખર્ચ અને ભૌતિક પ્રગતિમાં વિસંગતતા જોવા મળી છે. કોન્ટ્રાક્ટર ફર્મ ${contractor} દ્વારા રજૂ કરાયેલ માપણી પુસ્તિકા અને સ્થળ પુરાવા અપૂરતા જણાયા છે.\n3. સક્ષમ સત્તાધિકારીના નિર્દેશ મુજબ સંબંધિત એજન્સી અને જિલ્લા નોડલ અધિકારીને 14 દિવસમાં વિગતવાર અહેવાલ અને ઉપયોગિતા પ્રમાણપત્ર (UC) પોર્ટલ પર રજૂ કરવાનો આદેશ આપવામાં આવે છે.\n4. પાલન ન થવાના સંજોગોમાં આગળના ભંડોળ પર તાત્કાલિક અસરથી રોક લગાવવામાં આવશે.\n\n(સહી અને સિક્કો)\nનિયામક / સંયુક્ત સચિવ (એમપીલેડ્સ તકેદારી વિભાગ)\nસાંખ્યિકી અને કાર્યક્રમ અમલીકરણ મંત્રાલય, ભારત સરકાર`;
+    } else {
+      fallbackMemo = `GOVERNMENT OF INDIA\nMINISTRY OF STATISTICS AND PROGRAMME IMPLEMENTATION (MoSPI)\nMPLADS CENTRAL VIGILANCE & COMPLIANCE WING\nNEW DELHI - 110001\n\nMEMORANDUM NO: MoSPI/MPLADS/VIGIL/${workCode.replace(/[^A-Z0-9-]/gi, '')}/${new Date().getFullYear()}\nDATE: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}\n\nOFFICE MEMORANDUM\n\nSUBJECT: STATUTORY NOTICE & FORENSIC AUDIT DIRECTIVE - WORK CODE: ${workCode} ("${title}")\n\n1. In accordance with the revised MPLADS Guidelines 2023 (Clause 7.1 & 8.3), forensic audit evaluation was initiated for the development work sanctioned in District ${district}.\n2. Analysis reveals critical expenditure divergence: Sanctioned Outlay ₹${sanctioned} Lakhs vs Recorded Disbursement ₹${spent} Lakhs with physical progress discrepancies. Executing Contractor: ${contractor}.\n3. The District Authority and Implementing Agency are formally directed to conduct on-site physical measurement verification and submit certified MB extracts within 14 statutory working days.\n4. Failure to furnish audited ground evidence shall trigger automatic suspension of subsequent tranche disbursements under GFR Rule 144.\n\nBY ORDER OF THE STATUTORY VIGILANCE AUTHORITY\nDirector / Joint Secretary (MPLADS Oversight)\nMinistry of Statistics & Programme Implementation, Government of India`;
+    }
+
+    return res.json({ success: true, memo: fallbackMemo });
+  } catch (error: any) {
+    console.error("Memo generation error:", error);
+    res.status(500).json({ error: "Failed to generate statutory memo", details: error?.message });
   }
 });
 

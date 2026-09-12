@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../../i18n/LanguageContext';
 import { MPLADProject } from '../../types';
 import {
   Sparkles,
@@ -86,6 +87,7 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
   onSelectProjectByWorkCode,
   currentUser,
 }) => {
+  const { language } = useLanguage();
   const userRole = (currentUser?.role || 'district').toLowerCase();
   const [selectedRole, setSelectedRole] = useState<string>(userRole);
 
@@ -127,6 +129,7 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: textToSend,
+          language,
           user: {
             ...currentUser,
             role: selectedRole,

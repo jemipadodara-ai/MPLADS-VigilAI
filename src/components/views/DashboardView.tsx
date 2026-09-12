@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from '../../i18n/LanguageContext';
 import { MPLADProject, DiagnosticSummary } from '../../types';
 import { validateProjectData } from '../../utils/anomalyEngine';
 import { INITIAL_PROJECTS } from '../../data/mpladsData';
@@ -38,6 +39,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   setGlobalSearch,
   diagnosticSummary,
 }) => {
+  const { t } = useTranslation();
   const [showDiagnostics, setShowDiagnostics] = useState(true);
 
   // Fall back cleanly to authentic baseline dataset if empty
@@ -364,11 +366,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Execution Status
+                {t('Execution Status', 'Execution Status')}
               </span>
-              <h4 className="text-sm font-bold text-slate-900 mt-0.5">Project Status Overview</h4>
+              <h4 className="text-sm font-bold text-slate-900 mt-0.5">
+                {t('Project Status Overview', 'Project Status Overview')}
+              </h4>
             </div>
-            <span className="text-[11px] text-slate-500">Active Works</span>
+            <span className="text-[11px] text-slate-500">{t('Active Works', 'Active Works')}</span>
           </div>
 
           <div className="space-y-2.5">
@@ -384,7 +388,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               return (
                 <div key={status} className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-700">{status}</span>
+                    <span className="font-semibold text-slate-700">{t(status, status)}</span>
                     <span className="font-bold text-slate-900">
                       {count} ({pct}%)
                     </span>
@@ -406,17 +410,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Geographic Clustering
+                {t('Geographic Clustering', 'Geographic Clustering')}
               </span>
               <h4 className="text-sm font-bold text-slate-900 mt-0.5">
-                High Risk Projects by District
+                {t('High Risk Projects by District', 'High Risk Projects by District')}
               </h4>
             </div>
             <button
               onClick={() => onNavigateToTab('map')}
               className="text-xs font-semibold text-blue-700 hover:text-blue-800 inline-flex items-center gap-1"
             >
-              <span>Map View</span>
+              <span>{t('Map View', 'Map View')}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -430,7 +434,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-semibold text-slate-700">{district}</span>
                     <span className="font-bold text-slate-900">
-                      {data.high} flagged / {data.total} total
+                      {data.high} {t('flagged', 'flagged')} / {data.total} {t('total', 'total')}
                     </span>
                   </div>
                   <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   Sparkles,
   Send,
@@ -28,6 +29,7 @@ interface AiInvestigatorProps {
 }
 
 export const AiInvestigator: React.FC<AiInvestigatorProps> = ({ projects, constituencies }) => {
+  const { language } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'msg-01',
@@ -69,6 +71,7 @@ export const AiInvestigator: React.FC<AiInvestigatorProps> = ({ projects, consti
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: textToSend,
+          language,
           datasetSummary: {
             totalProjects: projects.length,
             criticalCount: projects.filter((p) => p.riskLevel === 'Critical').length,
