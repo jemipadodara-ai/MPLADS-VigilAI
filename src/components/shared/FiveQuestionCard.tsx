@@ -2,6 +2,7 @@ import React from 'react';
 import { FiveQuestionModel, PriorityLevel, ResponsibleAuthority } from '../../types';
 import { PriorityBadge, ResponsibleAuthorityBadge } from './StatusBadges';
 import { HelpCircle, AlertTriangle, ShieldAlert, ArrowRight, FileCheck, CheckCircle2 } from 'lucide-react';
+import { useTranslation } from '../../i18n/LanguageContext';
 
 interface FiveQuestionCardProps {
   model: FiveQuestionModel;
@@ -24,6 +25,8 @@ export const FiveQuestionCard: React.FC<FiveQuestionCardProps> = ({
   onExecuteAction,
   actionLabel,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <div
       className={`bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs divide-y divide-slate-100 ${className}`}
@@ -35,7 +38,7 @@ export const FiveQuestionCard: React.FC<FiveQuestionCardProps> = ({
             5Q
           </div>
           <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
-            Explainable Decision Framework
+            {t('Explainable Decision Framework', 'Explainable Decision Framework')}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -51,7 +54,7 @@ export const FiveQuestionCard: React.FC<FiveQuestionCardProps> = ({
                   : 'bg-emerald-100 text-emerald-800'
               }`}
             >
-              Risk: {riskScore}/100
+              {t('Risk Score', 'Risk')}: {riskScore}/100
             </span>
           )}
         </div>
@@ -66,7 +69,7 @@ export const FiveQuestionCard: React.FC<FiveQuestionCardProps> = ({
           </div>
           <div className="flex-1">
             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              WHAT Happened?
+              {t('WHAT Happened?', 'WHAT Happened?')}
             </div>
             <p className="text-slate-900 font-semibold mt-0.5">{model.whatHappened}</p>
           </div>
@@ -79,7 +82,7 @@ export const FiveQuestionCard: React.FC<FiveQuestionCardProps> = ({
           </div>
           <div className="flex-1">
             <div className="text-[11px] font-bold uppercase tracking-wider text-amber-800">
-              WHY is it unusual?
+              {t('WHY is it unusual?', 'WHY is it unusual?')}
             </div>
             <p className="text-slate-700 mt-0.5">{model.whyUnusual}</p>
           </div>
@@ -92,12 +95,12 @@ export const FiveQuestionCard: React.FC<FiveQuestionCardProps> = ({
           </div>
           <div className="flex-1">
             <div className="text-[11px] font-bold uppercase tracking-wider text-rose-800">
-              HOW serious is it?
+              {t('HOW serious is it?', 'HOW serious is it?')}
             </div>
             <p className="text-slate-800 font-medium mt-0.5">{model.howSerious}</p>
             {financialExposureLakhs !== undefined && financialExposureLakhs > 0 && (
               <div className="inline-block mt-1 text-xs px-2 py-0.5 rounded bg-rose-50 border border-rose-200 text-rose-800 font-bold">
-                Unverified Spending At Stake: ₹{financialExposureLakhs.toFixed(2)} Lakhs
+                {t('Unverified Spending At Stake:', 'Unverified Spending At Stake:')} ₹{financialExposureLakhs.toFixed(2)} {t('common.lakhs', 'Lakhs')}
               </div>
             )}
           </div>
@@ -110,7 +113,7 @@ export const FiveQuestionCard: React.FC<FiveQuestionCardProps> = ({
           </div>
           <div className="flex-1">
             <div className="text-[11px] font-bold uppercase tracking-wider text-indigo-700">
-              WHAT should the authority do next?
+              {t('WHAT should the authority do next?', 'WHAT should the authority do next?')}
             </div>
             <p className="text-indigo-950 font-semibold mt-0.5">{model.whatNext}</p>
           </div>
@@ -123,7 +126,7 @@ export const FiveQuestionCard: React.FC<FiveQuestionCardProps> = ({
           </div>
           <div className="flex-1">
             <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-800">
-              WHAT evidence is required?
+              {t('WHAT evidence is required?', 'WHAT evidence is required?')}
             </div>
             <ul className="mt-1 space-y-1">
               {(model?.evidenceRequired || []).map((ev, idx) => (
@@ -141,13 +144,13 @@ export const FiveQuestionCard: React.FC<FiveQuestionCardProps> = ({
       {onExecuteAction && (
         <div className="bg-slate-50 px-4 py-2.5 flex items-center justify-between">
           <span className="text-xs text-slate-500 italic">
-            Human authorization required prior to regulatory enforcement.
+            {t('Human authorization required prior to regulatory enforcement.', 'Human authorization required prior to regulatory enforcement.')}
           </span>
           <button
             onClick={onExecuteAction}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
           >
-            <span>{actionLabel || 'Proceed with Recommended Action'}</span>
+            <span>{actionLabel ? t(actionLabel, actionLabel) : t('Proceed with Recommended Action', 'Proceed with Recommended Action')}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>

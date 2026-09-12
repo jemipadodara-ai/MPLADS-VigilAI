@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { MPLADProject } from '../types';
 import { RiskBadge } from './RiskBadge';
 import { ChevronRight, ChevronLeft, ArrowUpRight, AlertTriangle } from 'lucide-react';
+import { useTranslation } from '../i18n/LanguageContext';
 
 interface ProjectTableProps {
   projects: MPLADProject[];
@@ -14,6 +15,7 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
   onSelectProject,
   pageSize = 10,
 }) => {
+  const { t } = useTranslation();
   const [currentPage, setCurrentPage] = useState(1);
 
   const totalPages = Math.max(1, Math.ceil(projects.length / pageSize));
@@ -30,9 +32,9 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
     return (
       <div className="bg-white rounded-2xl border border-slate-200/90 p-12 text-center shadow-2xs">
         <AlertTriangle className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-        <h4 className="text-sm font-bold text-slate-800">No Projects Found</h4>
+        <h4 className="text-sm font-bold text-slate-800">{t('No Projects Found', 'No Projects Found')}</h4>
         <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
-          No project records matched your search query and filter criteria. Try resetting the filters.
+          {t('No project records matched your search query and filter criteria. Try resetting the filters.', 'No project records matched your search query and filter criteria. Try resetting the filters.')}
         </p>
       </div>
     );
@@ -45,14 +47,14 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-slate-200/80 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              <th className="py-3 px-4">Project & Work Code</th>
-              <th className="py-3 px-4">Category</th>
-              <th className="py-3 px-4">District / MP</th>
-              <th className="py-3 px-4 text-right">Financials (₹L)</th>
-              <th className="py-3 px-4 text-center">Progress</th>
-              <th className="py-3 px-4">Status</th>
-              <th className="py-3 px-4 text-center">Risk Score</th>
-              <th className="py-3 px-4 text-right">Action</th>
+              <th className="py-3 px-4">{t('Project & Work Code', 'Project & Work Code')}</th>
+              <th className="py-3 px-4">{t('Category', 'Category')}</th>
+              <th className="py-3 px-4">{t('District / MP', 'District / MP')}</th>
+              <th className="py-3 px-4 text-right">{t('Financials (₹L)', 'Financials (₹L)')}</th>
+              <th className="py-3 px-4 text-center">{t('phrases.Progress', 'Progress')}</th>
+              <th className="py-3 px-4">{t('common.status', 'Status')}</th>
+              <th className="py-3 px-4 text-center">{t('common.riskScore', 'Risk Score')}</th>
+              <th className="py-3 px-4 text-right">{t('common.action', 'Action')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-xs">
@@ -74,7 +76,7 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
                       <span>{p.workCode || p.id || 'ID Missing'}</span>
                       {p.investigationStatus && p.investigationStatus !== 'New' && (
                         <span className="px-1.5 py-0.2 rounded text-[10px] bg-slate-100 text-slate-700 font-sans font-medium">
-                          {p.investigationStatus}
+                          {t(p.investigationStatus, p.investigationStatus)}
                         </span>
                       )}
                     </div>
@@ -82,14 +84,14 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
                       {p.title || (p.workCode || p.id ? 'Untitled Project' : 'Untitled Project (ID Missing)')}
                     </div>
                     <div className="text-[11px] text-slate-500 line-clamp-1">
-                      Agency: {p.implementingAgency || 'District Council'}
+                      {t('projects.agency', 'Agency')}: {p.implementingAgency || t('District Authority', 'District Council')}
                     </div>
                   </td>
 
                   {/* Category */}
                   <td className="py-3.5 px-4 whitespace-nowrap">
                     <span className="inline-block px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px] font-medium">
-                      {p.category}
+                      {t(p.category, p.category)}
                     </span>
                   </td>
 
@@ -105,7 +107,7 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
                       ₹{p.sanctionedAmountLakhs.toFixed(1)}L
                     </div>
                     <div className="text-[11px] text-slate-500">
-                      Spent: ₹{p.expenditureAmountLakhs.toFixed(1)}L ({spentPct}%)
+                      {t('Expenditure', 'Spent')}: ₹{p.expenditureAmountLakhs.toFixed(1)}L ({spentPct}%)
                     </div>
                   </td>
 
@@ -141,7 +143,7 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
                           : 'bg-blue-50 text-blue-700'
                       }`}
                     >
-                      {p.status}
+                      {t(p.status, p.status)}
                     </span>
                   </td>
 
@@ -168,7 +170,7 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
                         onSelectProject(p);
                       }}
                       className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors inline-flex items-center justify-center"
-                      title="Inspect project details"
+                      title={t('common.viewDetails', 'Inspect project details')}
                     >
                       <ArrowUpRight className="w-4 h-4" />
                     </button>
@@ -183,11 +185,11 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
       {/* Pagination Footer */}
       <div className="px-4 py-3 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between text-xs text-slate-500">
         <div>
-          Showing <span className="font-semibold text-slate-800">{startIndex + 1}</span> to{' '}
+          {t('Showing', 'Showing')} <span className="font-semibold text-slate-800">{startIndex + 1}</span> -{' '}
           <span className="font-semibold text-slate-800">
             {Math.min(projects.length, startIndex + pageSize)}
           </span>{' '}
-          of <span className="font-semibold text-slate-800">{projects.length}</span> records
+          {t('of', 'of')} <span className="font-semibold text-slate-800">{projects.length}</span> {t('records', 'records')}
         </div>
 
         <div className="flex items-center gap-1">
@@ -195,20 +197,20 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
             className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-            title="Previous page"
+            title={t('common.back', 'Previous page')}
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
 
           <span className="px-2.5 font-semibold text-slate-700">
-            Page {currentPage} of {totalPages}
+            {t('Page', 'Page')} {currentPage} {t('of', 'of')} {totalPages}
           </span>
 
           <button
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
             className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-            title="Next page"
+            title={t('phrases.Next', 'Next page')}
           >
             <ChevronRight className="w-4 h-4" />
           </button>

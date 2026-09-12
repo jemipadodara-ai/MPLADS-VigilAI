@@ -14,6 +14,7 @@ import {
   ClipboardList,
   Award,
 } from 'lucide-react';
+import { useTranslation } from '../../i18n/LanguageContext';
 
 export type ActionModalType =
   | 'Assign Inspection'
@@ -53,6 +54,7 @@ export const DecisionActionModal: React.FC<DecisionActionModalProps> = ({
   onConfirmAction,
   currentUser,
 }) => {
+  const { t } = useTranslation();
   if (!isOpen || !caseItem || !actionType) return null;
 
   const [actingAsMinisterOverride, setActingAsMinisterOverride] = useState(false);
@@ -163,17 +165,17 @@ export const DecisionActionModal: React.FC<DecisionActionModalProps> = ({
             <div>
               <h3 className="font-bold text-base leading-tight">
                 {isFreeze
-                  ? 'Execute Statutory Payment Freeze'
+                  ? t('Execute Statutory Payment Freeze', 'Execute Statutory Payment Freeze')
                   : isInspection
-                  ? 'Issue Mandatory On-Site Inspection Order'
+                  ? t('Issue Mandatory On-Site Inspection Order', 'Issue Mandatory On-Site Inspection Order')
                   : isNotice
-                  ? 'Issue Show-Cause & Discrepancy Notice'
+                  ? t('Issue Show-Cause & Discrepancy Notice', 'Issue Show-Cause & Discrepancy Notice')
                   : isResolve
-                  ? 'Formal Case Resolution & Clearance'
-                  : `Execute Directive: ${actionType}`}
+                  ? t('Formal Case Resolution & Clearance', 'Formal Case Resolution & Clearance')
+                  : `${t('Execute Directive:', 'Execute Directive:')} ${actionType ? t(actionType, actionType) : ''}`}
               </h3>
               <p className="text-xs opacity-75 mt-0.5">
-                Statutory Docket Reference: {caseItem.id}
+                {t('Statutory Docket Reference:', 'Statutory Docket Reference:')} {caseItem.id}
               </p>
             </div>
           </div>
@@ -238,20 +240,20 @@ export const DecisionActionModal: React.FC<DecisionActionModalProps> = ({
           {/* Project Details Snapshot */}
           <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50/60 p-3 rounded-xl border border-slate-200">
             <div>
-              <span className="text-slate-500 block">Location:</span>
+              <span className="text-slate-500 block">{t('projects.district', 'District')}:</span>
               <span className="font-semibold text-slate-900">{caseItem.district}, {caseItem.state}</span>
             </div>
             <div>
-              <span className="text-slate-500 block">Financial Exposure:</span>
-              <span className="font-bold text-rose-700">₹{caseItem.financialExposureLakhs} Lakhs</span>
+              <span className="text-slate-500 block">{t('Unverified Spending At Stake', 'Financial Exposure')}:</span>
+              <span className="font-bold text-rose-700">₹{caseItem.financialExposureLakhs} {t('common.lakhs', 'Lakhs')}</span>
             </div>
             <div>
-              <span className="text-slate-500 block">Executing Contractor:</span>
+              <span className="text-slate-500 block">{t('Executing Contractor', 'Executing Contractor')}:</span>
               <span className="font-medium text-slate-800 truncate block">{caseItem.contractorName}</span>
             </div>
             <div>
-              <span className="text-slate-500 block">Recommended Authority:</span>
-              <span className="font-medium text-slate-800">{caseItem.responsibleAuthority}</span>
+              <span className="text-slate-500 block">{t('Authority:', 'Recommended Authority')}:</span>
+              <span className="font-medium text-slate-800">{t(caseItem.responsibleAuthority, caseItem.responsibleAuthority)}</span>
             </div>
           </div>
 
@@ -260,7 +262,7 @@ export const DecisionActionModal: React.FC<DecisionActionModalProps> = ({
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Assigned Inspection Officer / Authority
+                  {t('Assigned Directive Officer', 'Assigned Inspection Officer / Authority')}
                 </label>
                 <div className="relative">
                   <UserCheck className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -277,7 +279,7 @@ export const DecisionActionModal: React.FC<DecisionActionModalProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Officer Email (NIC/Gov.in)
+                    {t('auth.emailLabel', 'Officer Email (NIC/Gov.in)')}
                   </label>
                   <input
                     type="email"
@@ -288,7 +290,7 @@ export const DecisionActionModal: React.FC<DecisionActionModalProps> = ({
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Inspection Target Date
+                    {t('Enforcement Deadline', 'Inspection Target Date')}
                   </label>
                   <div className="relative">
                     <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -309,7 +311,7 @@ export const DecisionActionModal: React.FC<DecisionActionModalProps> = ({
             <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 space-y-2">
               <div className="flex items-center gap-2 font-bold text-xs">
                 <AlertTriangle className="w-4 h-4 text-rose-600" />
-                Interim Payment Halt Instruction
+                {t('Execute Statutory Payment Freeze', 'Interim Payment Halt Instruction')}
               </div>
               <p className="text-xs text-rose-800 leading-relaxed">
                 This notice dispatches an interim stop-payment request to the District Nodal Authority and Public Financial Management System (PFMS) treasury portal pending measurement book verification.
@@ -331,7 +333,7 @@ export const DecisionActionModal: React.FC<DecisionActionModalProps> = ({
           {/* Notes & Justification */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Official Decision Directive & Notes (Added to Audit Trail)
+              {t('Administrative Notes & Justification', 'Official Decision Directive & Notes (Added to Audit Trail)')}
             </label>
             <textarea
               rows={3}
@@ -350,7 +352,7 @@ export const DecisionActionModal: React.FC<DecisionActionModalProps> = ({
             onClick={onClose}
             className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors"
           >
-            Cancel
+            {t('Cancel', 'Cancel')}
           </button>
           <button
             type="button"
@@ -370,16 +372,16 @@ export const DecisionActionModal: React.FC<DecisionActionModalProps> = ({
                 <span>Decision Rights Restricted (Citizen View-Only)</span>
               </>
             ) : isSubmitting ? (
-              <span>Recording Action...</span>
+              <span>{t('projectDetail.generating', 'Recording Action...')}</span>
             ) : isMinisterUser ? (
               <>
                 <Award className="w-3.5 h-3.5" />
-                <span>Issue Ministerial Executive Order</span>
+                <span>{t('Real-Time Statutory Authority', 'Issue Ministerial Executive Order')}</span>
               </>
             ) : (
               <>
                 <Send className="w-3.5 h-3.5" />
-                <span>Confirm &amp; Dispatch Directive</span>
+                <span>{t('Confirm & Dispatch Statutory Notice', 'Confirm & Dispatch Directive')}</span>
               </>
             )}
           </button>

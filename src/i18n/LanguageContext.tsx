@@ -38,6 +38,17 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
+// Precompute reverse lookup from any language phrase to canonical English key
+const reverseToEnglish = new Map<string, string>();
+for (const langKey of Object.keys(TRANSLATIONS) as LanguageCode[]) {
+  const p = TRANSLATIONS[langKey]?.phrases || {};
+  for (const [enKey, transVal] of Object.entries(p)) {
+    if (transVal && typeof transVal === 'string') {
+      reverseToEnglish.set(transVal.trim().toLowerCase(), enKey.trim());
+    }
+  }
+}
+
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<LanguageCode>(() => {
     try {
@@ -69,15 +80,32 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     document.documentElement.lang = language;
 
+    // 1. Reset all previously translated nodes and attributes
+    document.querySelectorAll('[data-vigilai-orig]').forEach((el) => {
+      const orig = el.getAttribute('data-vigilai-orig');
+      if (orig) {
+        el.textContent = orig;
+        el.removeAttribute('data-vigilai-orig');
+      }
+    });
+
+    document.querySelectorAll('[data-vigilai-orig-ph]').forEach((el) => {
+      const orig = el.getAttribute('data-vigilai-orig-ph');
+      if (orig) {
+        (el as HTMLInputElement).placeholder = orig;
+        el.removeAttribute('data-vigilai-orig-ph');
+      }
+    });
+
+    document.querySelectorAll('[data-vigilai-orig-title]').forEach((el) => {
+      const orig = el.getAttribute('data-vigilai-orig-title');
+      if (orig) {
+        (el as HTMLElement).title = orig;
+        el.removeAttribute('data-vigilai-orig-title');
+      }
+    });
+
     if (language === 'en') {
-      // Revert any translated nodes
-      document.querySelectorAll('[data-vigilai-orig]').forEach((el) => {
-        const orig = el.getAttribute('data-vigilai-orig');
-        if (orig) {
-          el.textContent = orig;
-          el.removeAttribute('data-vigilai-orig');
-        }
-      });
       return;
     }
 
@@ -90,23 +118,71 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     }
 
+    // Helper to resolve translation for a string (direct or reverse lookup)
+    const getTranslation = (raw: string): string | null => {
+      const trimmed = raw.trim();
+      if (!trimmed || trimmed.length < 2) return null;
+
+      // Direct match
+      if (textMap.has(trimmed)) {
+        return textMap.get(trimmed)!;
+      }
+
+      // Reverse lookup (in case text was in another language)
+      const enKey = reverseToEnglish.get(trimmed.toLowerCase());
+      if (enKey && textMap.has(enKey)) {
+        return textMap.get(enKey)!;
+      }
+
+      // Compound phrase replacements
+      // e.g., "12 Entities" -> "12 इकाइयां"
+      if (/\b\d+\s+Entities\b/i.test(trimmed) && textMap.has('Entities')) {
+        return trimmed.replace(/\bEntities\b/gi, textMap.get('Entities')!);
+      }
+      if (/\b\d+\s+Vendors\b/i.test(trimmed) && textMap.has('Vendors')) {
+        return trimmed.replace(/\bVendors\b/gi, textMap.get('Vendors')!);
+      }
+      if (/\b\d+\s+(?:works|Works)\b/i.test(trimmed) && (textMap.has('works') || textMap.has('Works Registry'))) {
+        const transWorks = textMap.get('works') || textMap.get('Works Registry')!;
+        return trimmed.replace(/\b(?:works|Works)\b/gi, transWorks);
+      }
+      if (/\b\d+d?\s+Overdue\b/i.test(trimmed) && (textMap.has('Overdue') || textMap.has('Days Overdue'))) {
+        const trans = textMap.get('Overdue') || textMap.get('Days Overdue')!;
+        return trimmed.replace(/\bOverdue\b/gi, trans);
+      }
+      if (/[+-]?\d+%?\s+Overrun\b/i.test(trimmed) && textMap.has('Overrun')) {
+        return trimmed.replace(/\bOverrun\b/gi, textMap.get('Overrun')!);
+      }
+      if (/\d+%\s+Done\b/i.test(trimmed) && textMap.has('Done')) {
+        return trimmed.replace(/\bDone\b/gi, textMap.get('Done')!);
+      }
+      if (/\d+%\s+disbursed\b/i.test(trimmed) && textMap.has('disbursed')) {
+        return trimmed.replace(/\bdisbursed\b/gi, textMap.get('disbursed')!);
+      }
+      if (/^Score:\s*/i.test(trimmed) && textMap.has('Score:')) {
+        return trimmed.replace(/^Score:\s*/i, `${textMap.get('Score:')!} `);
+      }
+
+      return null;
+    };
+
     const translateNode = (node: Node) => {
       if (node.nodeType === Node.TEXT_NODE) {
         const text = node.nodeValue || '';
         const trimmed = text.trim();
         if (!trimmed || trimmed.length < 2) return;
 
-        if (textMap.has(trimmed)) {
+        const translated = getTranslation(trimmed);
+        if (translated) {
           const parent = node.parentElement;
           if (parent) {
             const tag = parent.tagName.toLowerCase();
-            if (['script', 'style', 'input', 'textarea', 'code', 'pre'].includes(tag)) return;
+            if (['script', 'style', 'code', 'pre'].includes(tag)) return;
             if (parent.isContentEditable) return;
             if (!parent.hasAttribute('data-vigilai-orig')) {
               parent.setAttribute('data-vigilai-orig', trimmed);
             }
           }
-          const translated = textMap.get(trimmed)!;
           const leading = text.match(/^\s*/)?.[0] || '';
           const trailing = text.match(/\s*$/)?.[0] || '';
           node.nodeValue = leading + translated + trailing;
@@ -114,15 +190,41 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       } else if (node.nodeType === Node.ELEMENT_NODE) {
         const el = node as HTMLElement;
         const tag = el.tagName.toLowerCase();
-        if (['script', 'style', 'input', 'textarea', 'code', 'pre'].includes(tag)) return;
+        if (['script', 'style', 'code', 'pre'].includes(tag)) return;
         if (el.isContentEditable) return;
+
+        // Check placeholder on input/textarea
+        if (tag === 'input' || tag === 'textarea') {
+          const input = el as HTMLInputElement | HTMLTextAreaElement;
+          if (input.placeholder) {
+            const transPlaceholder = getTranslation(input.placeholder);
+            if (transPlaceholder && transPlaceholder !== input.placeholder) {
+              if (!input.hasAttribute('data-vigilai-orig-ph')) {
+                input.setAttribute('data-vigilai-orig-ph', input.placeholder);
+              }
+              input.placeholder = transPlaceholder;
+            }
+          }
+        }
+
+        // Check title attribute (tooltip)
+        if (el.title) {
+          const transTitle = getTranslation(el.title);
+          if (transTitle && transTitle !== el.title) {
+            if (!el.hasAttribute('data-vigilai-orig-title')) {
+              el.setAttribute('data-vigilai-orig-title', el.title);
+            }
+            el.title = transTitle;
+          }
+        }
+
         for (let i = 0; i < el.childNodes.length; i++) {
           translateNode(el.childNodes[i]);
         }
       }
     };
 
-    // Initial pass
+    // Initial pass over the entire document body
     translateNode(document.body);
 
     const observer = new MutationObserver((mutations) => {
@@ -131,7 +233,8 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           mutation.addedNodes.forEach((n) => translateNode(n));
         } else if (mutation.type === 'characterData') {
           const text = mutation.target.nodeValue?.trim() || '';
-          if (textMap.has(text) && textMap.get(text) !== text) {
+          const trans = getTranslation(text);
+          if (trans && trans !== text) {
             translateNode(mutation.target);
           }
         }

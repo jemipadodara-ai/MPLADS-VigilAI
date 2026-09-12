@@ -1,5 +1,6 @@
 import React from 'react';
 import { RiskLevel } from '../types';
+import { useTranslation } from '../i18n/LanguageContext';
 
 interface RiskScoreProps {
   score: number;
@@ -16,6 +17,7 @@ export const RiskScore: React.FC<RiskScoreProps> = ({
   showLabel = true,
   showBar = false,
 }) => {
+  const { t } = useTranslation();
   const cleanScore = Math.min(100, Math.max(0, Math.round(score || 0)));
 
   // Determine level if not provided or to ensure exact score alignment
@@ -60,13 +62,13 @@ export const RiskScore: React.FC<RiskScoreProps> = ({
   if (size === 'xl') {
     return (
       <div className={`p-5 rounded-2xl border ${levelTheme.border} ${levelTheme.bg} flex flex-col items-center text-center shadow-xs`}>
-        <span className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Risk Score</span>
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">{t('common.riskScore', 'Risk Score')}</span>
         <div className="flex items-baseline gap-1">
           <span className={`text-4xl font-extrabold tracking-tight ${levelTheme.text}`}>{cleanScore}</span>
           <span className="text-slate-400 font-semibold text-base">/ 100</span>
         </div>
         <div className={`mt-2.5 px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase ${levelTheme.pill}`}>
-          {computedLevel} Risk
+          {t(`${computedLevel} Risk`, `${computedLevel} Risk`)}
         </div>
         {showBar && (
           <div className="w-full bg-slate-200/80 rounded-full h-2 mt-4 overflow-hidden">
@@ -77,7 +79,7 @@ export const RiskScore: React.FC<RiskScoreProps> = ({
           </div>
         )}
         <div className="text-[11px] text-slate-500 mt-2 font-medium">
-          Scale: 0–30 Low • 31–60 Medium • 61–80 High • 81–100 Critical
+          {t('Scale: 0–30 Low • 31–60 Medium • 61–80 High • 81–100 Critical', 'Scale: 0–30 Low • 31–60 Medium • 61–80 High • 81–100 Critical')}
         </div>
       </div>
     );
@@ -93,9 +95,9 @@ export const RiskScore: React.FC<RiskScoreProps> = ({
         {showLabel && (
           <div>
             <div className={`text-xs font-bold uppercase tracking-wider ${levelTheme.text}`}>
-              {computedLevel} Risk
+              {t(`${computedLevel} Risk`, `${computedLevel} Risk`)}
             </div>
-            <div className="text-[11px] text-slate-500">Anomaly Index</div>
+            <div className="text-[11px] text-slate-500">{t('Anomaly Index', 'Anomaly Index')}</div>
           </div>
         )}
       </div>
@@ -119,7 +121,7 @@ export const RiskScore: React.FC<RiskScoreProps> = ({
       </span>
       {showLabel && (
         <span className={`text-xs font-semibold ${levelTheme.text}`}>
-          {computedLevel}
+          {t(computedLevel, computedLevel)}
         </span>
       )}
     </div>

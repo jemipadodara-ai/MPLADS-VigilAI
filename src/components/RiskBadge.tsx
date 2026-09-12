@@ -1,5 +1,6 @@
 import React from 'react';
 import { RiskLevel } from '../types';
+import { useTranslation } from '../i18n/LanguageContext';
 
 interface RiskBadgeProps {
   level: RiskLevel | string;
@@ -14,6 +15,7 @@ export const RiskBadge: React.FC<RiskBadgeProps> = ({
   showDot = true,
   className = '',
 }) => {
+  const { t } = useTranslation();
   const normLevel = (level || 'Low').toString().toLowerCase();
 
   let styles = 'bg-emerald-50 text-emerald-700 border-emerald-200';
@@ -46,7 +48,7 @@ export const RiskBadge: React.FC<RiskBadgeProps> = ({
       className={`inline-flex items-center gap-1.5 font-semibold border rounded-full whitespace-nowrap shadow-2xs ${styles} ${sizeClasses} ${className}`}
     >
       {showDot && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />}
-      <span>{label}</span>
+      <span>{t(label, label)}</span>
     </span>
   );
 };

@@ -1,8 +1,10 @@
 import React from 'react';
 import { PriorityLevel, ResponsibleAuthority, FraudStatus, CaseStatus } from '../../types';
 import { AlertTriangle, ShieldCheck, Clock, Eye, AlertOctagon, FileCheck2, Building2 } from 'lucide-react';
+import { useTranslation } from '../../i18n/LanguageContext';
 
 export const PriorityBadge: React.FC<{ priority: PriorityLevel }> = ({ priority }) => {
+  const { t } = useTranslation();
   const styles: Record<PriorityLevel, { bg: string; text: string; label: string; border: string }> = {
     P0: { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200', label: 'P0 Immediate' },
     P1: { bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-200', label: 'P1 High' },
@@ -15,21 +17,23 @@ export const PriorityBadge: React.FC<{ priority: PriorityLevel }> = ({ priority 
   return (
     <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-bold border ${s.bg} ${s.text} ${s.border}`}>
       <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
-      {s.label}
+      {t(s.label, s.label)}
     </span>
   );
 };
 
 export const ResponsibleAuthorityBadge: React.FC<{ authority: ResponsibleAuthority }> = ({ authority }) => {
+  const { t } = useTranslation();
   return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 text-xs font-medium">
       <Building2 className="w-3.5 h-3.5 text-slate-500" />
-      <span>{authority}</span>
+      <span>{t(authority, authority)}</span>
     </span>
   );
 };
 
 export const FraudStatusBadge: React.FC<{ status: FraudStatus }> = ({ status }) => {
+  const { t } = useTranslation();
   const config: Record<FraudStatus, { label: string; bg: string; text: string; border: string; icon: any }> = {
     NOT_ESTABLISHED: {
       label: 'Not Established (Routine Oversight)',
@@ -74,12 +78,13 @@ export const FraudStatusBadge: React.FC<{ status: FraudStatus }> = ({ status }) 
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border ${c.bg} ${c.text} ${c.border}`}>
       <Icon className="w-3.5 h-3.5 shrink-0" />
-      <span>{c.label}</span>
+      <span>{t(c.label, c.label)}</span>
     </span>
   );
 };
 
 export const CaseStatusBadge: React.FC<{ status: CaseStatus }> = ({ status }) => {
+  const { t } = useTranslation();
   const map: Record<CaseStatus, { bg: string; text: string; border: string }> = {
     New: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
     'Under Review': { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
@@ -96,7 +101,7 @@ export const CaseStatusBadge: React.FC<{ status: CaseStatus }> = ({ status }) =>
 
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${s.bg} ${s.text} ${s.border}`}>
-      {status}
+      {t(status, status)}
     </span>
   );
 };

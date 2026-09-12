@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from '../i18n/LanguageContext';
 
 interface KPICardProps {
   id?: string;
@@ -22,6 +23,7 @@ export const KPICard: React.FC<KPICardProps> = ({
   badge,
   onClick,
 }) => {
+  const { t } = useTranslation();
   const badgeStyles = {
     neutral: 'bg-slate-100 text-slate-700 border-slate-200',
     warning: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -40,7 +42,7 @@ export const KPICard: React.FC<KPICardProps> = ({
       <div className="flex items-start justify-between gap-3">
         <div>
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-            {title}
+            {t(title, title)}
           </span>
           <div className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900">
             {value}
@@ -53,12 +55,12 @@ export const KPICard: React.FC<KPICardProps> = ({
 
       {(subtext || badge) && (
         <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-          {subtext && <span className="text-slate-500">{subtext}</span>}
+          {subtext && <span className="text-slate-500">{t(subtext, subtext)}</span>}
           {badge && (
             <span
               className={`px-2 py-0.5 rounded-md font-medium border text-[11px] ${badgeStyles}`}
             >
-              {badge.text}
+              {t(badge.text, badge.text)}
             </span>
           )}
         </div>
