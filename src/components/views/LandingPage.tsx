@@ -20,6 +20,7 @@ interface LandingPageProps {
   onEnterPortal: () => void;
   onExploreProjects?: () => void;
   onNavigateToLogin?: () => void;
+  onNavigateToRegister?: () => void;
   onSelectProject?: (p: any) => void;
   featuredProject?: any;
   totalProjects?: number;
@@ -32,6 +33,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onEnterPortal,
   onExploreProjects,
   onNavigateToLogin,
+  onNavigateToRegister,
   user,
   onSignOut,
 }) => {
@@ -85,13 +87,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </div>
             ) : (
               <>
+                {onNavigateToRegister && (
+                  <button
+                    id="landing-create-account-btn"
+                    onClick={onNavigateToRegister}
+                    className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs sm:text-sm font-bold transition-all cursor-pointer"
+                  >
+                    <span>Create Account</span>
+                  </button>
+                )}
+
                 {onNavigateToLogin && (
                   <button
                     id="landing-signin-btn"
                     onClick={onNavigateToLogin}
                     className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold transition-all cursor-pointer"
                   >
-                    <span>Sign In / Register</span>
+                    <span>Sign In</span>
                   </button>
                 )}
 
@@ -162,13 +174,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
 
+                {onNavigateToRegister && (
+                  <button
+                    id="hero-create-account-btn"
+                    onClick={onNavigateToRegister}
+                    className="inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-base font-bold transition-all shadow-xs cursor-pointer"
+                  >
+                    <span>Create Account</span>
+                  </button>
+                )}
+
                 {onNavigateToLogin && (
                   <button
                     id="hero-signin-btn"
                     onClick={onNavigateToLogin}
                     className="inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-base font-bold transition-all shadow-xs cursor-pointer"
                   >
-                    <span>Officer Sign In / Register</span>
+                    <span>Officer Sign In</span>
                   </button>
                 )}
               </>

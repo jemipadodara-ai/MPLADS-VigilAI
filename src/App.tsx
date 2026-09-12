@@ -42,6 +42,7 @@ import {
 export function App() {
   // Navigation State (Landing, Dashboard, Projects, Contractors, Map, Settings, Login)
   const [activeTab, setActiveTab] = useState<ActiveTab>('landing');
+  const [loginInitialMode, setLoginInitialMode] = useState<'signin' | 'signup'>('signin');
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
 
   // Authentication State
@@ -183,6 +184,12 @@ export function App() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           onNavigateToLogin={() => {
+            setLoginInitialMode('signin');
+            setActiveTab('login');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onNavigateToRegister={() => {
+            setLoginInitialMode('signup');
             setActiveTab('login');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
@@ -212,11 +219,12 @@ export function App() {
   }
 
   // ---------------------------------------------------------------------------
-  // 2. AUTHENTICATED LOGIN PAGE VIEW
+  // 2. AUTHENTICATED LOGIN / REGISTRATION PAGE VIEW
   // ---------------------------------------------------------------------------
   if (activeTab === 'login') {
     return (
       <LoginPage
+        initialMode={loginInitialMode}
         onLoginSuccess={handleLoginSuccess}
         onExplorePublic={() => {
           setActiveTab('landing');

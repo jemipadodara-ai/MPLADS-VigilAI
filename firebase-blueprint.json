@@ -97,8 +97,9 @@
       "properties": {
         "uid": { "type": "string" },
         "email": { "type": "string" },
-        "role": { "type": "string", "enum": ["admin", "citizen", "standard"] },
+        "role": { "type": "string", "enum": ["admin", "citizen", "standard", "nodal_officer", "mp", "analyst"] },
         "displayName": { "type": "string" },
+        "department": { "type": "string" },
         "createdAt": { "type": "string" }
       },
       "required": ["uid", "email", "role", "createdAt"]
