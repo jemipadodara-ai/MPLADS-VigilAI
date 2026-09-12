@@ -18,6 +18,7 @@ import { analyzeAllProjects, validateProjectData } from './utils/anomalyEngine';
 // Components & Views
 import { Sidebar, ActiveTab } from './components/Sidebar';
 import { LandingPage } from './components/views/LandingPage';
+import { LoginPage, AuthenticatedUser } from './components/views/LoginPage';
 import { Dashboard } from './components/views/Dashboard';
 import { Projects } from './components/views/Projects';
 import { Contractors } from './components/views/Contractors';
@@ -33,12 +34,25 @@ import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import {
   Globe,
   FolderGit2,
+  Lock,
+  UserCheck,
+  LogOut,
 } from 'lucide-react';
 
 export function App() {
-  // Navigation State (Landing, Dashboard, Projects, Contractors, Map, Settings)
+  // Navigation State (Landing, Dashboard, Projects, Contractors, Map, Settings, Login)
   const [activeTab, setActiveTab] = useState<ActiveTab>('landing');
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
+
+  // Authentication State
+  const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(() => {
+    try {
+      const saved = localStorage.getItem('vigilai_user_session');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
 
   // Modal State
   const [selectedProject, setSelectedProject] = useState<MPLADProject | null>(null);
@@ -51,6 +65,42 @@ export function App() {
   );
   const [contractors] = useState<ContractorProfile[]>(CONTRACTOR_PROFILES);
   const [constituencies] = useState<ConstituencySummary[]>(CONSTITUENCY_SUMMARIES);
+
+  // Check server session on mount
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.authenticated && data.user) {
+          setCurrentUser(data.user);
+          localStorage.setItem('vigilai_user_session', JSON.stringify(data.user));
+        }
+      })
+      .catch(() => {
+        // Continue with cached local state
+      });
+  }, []);
+
+  // Handle successful login or account creation - redirect to home page
+  const handleLoginSuccess = useCallback((user: AuthenticatedUser) => {
+    setCurrentUser(user);
+    localStorage.setItem('vigilai_user_session', JSON.stringify(user));
+    setActiveTab('landing');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  // Handle sign out
+  const handleSignOut = useCallback(async () => {
+    setCurrentUser(null);
+    localStorage.removeItem('vigilai_user_session');
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // Ignored
+    }
+    setActiveTab('landing');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   // Firestore automatic listener with fallback to authentic dataset
   useEffect(() => {
@@ -132,6 +182,10 @@ export function App() {
             setActiveTab('projects');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
+          onNavigateToLogin={() => {
+            setActiveTab('login');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
           onSelectProject={(p) => setSelectedProject(p)}
           featuredProject={scoredProjects[0] || null}
           totalProjects={scoredProjects.length}
@@ -141,6 +195,8 @@ export function App() {
               100
             ).toFixed(1)
           )}
+          user={currentUser}
+          onSignOut={handleSignOut}
         />
 
         {/* Project Details Modal */}
@@ -156,7 +212,22 @@ export function App() {
   }
 
   // ---------------------------------------------------------------------------
-  // 2. MAIN APPLICATION CONSOLE VIEW (Direct Access Without Authentication)
+  // 2. AUTHENTICATED LOGIN PAGE VIEW
+  // ---------------------------------------------------------------------------
+  if (activeTab === 'login') {
+    return (
+      <LoginPage
+        onLoginSuccess={handleLoginSuccess}
+        onExplorePublic={() => {
+          setActiveTab('landing');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // 3. MAIN APPLICATION CONSOLE VIEW
   // ---------------------------------------------------------------------------
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex font-sans antialiased">
@@ -171,6 +242,8 @@ export function App() {
         onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
         totalProjectsCount={scoredProjects.length}
         totalContractorsCount={contractors.length}
+        user={currentUser}
+        onSignOut={handleSignOut}
       />
 
       {/* 2. Main Application Canvas */}
@@ -199,6 +272,40 @@ export function App() {
 
           {/* Quick Header Actions */}
           <div className="flex items-center gap-2.5 shrink-0">
+            {/* User Profile Badge or Sign In Button */}
+            {currentUser ? (
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200/80 text-xs">
+                <div className="w-5 h-5 rounded-full bg-cyan-600 text-white flex items-center justify-center font-bold text-[10px]">
+                  <UserCheck className="w-3 h-3" />
+                </div>
+                <div className="leading-tight text-left">
+                  <div className="font-bold text-slate-800 text-[11px] leading-none">
+                    {currentUser.name}
+                  </div>
+                  <div className="text-[9px] font-medium text-slate-500 uppercase tracking-wide">
+                    {currentUser.role.replace('_', ' ')}
+                  </div>
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  className="ml-1 text-slate-400 hover:text-rose-600 cursor-pointer transition-colors p-1"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                id="header-signin-btn"
+                onClick={() => setActiveTab('login')}
+                className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                title="Officer Login"
+              >
+                <Lock className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Officer Sign In</span>
+              </button>
+            )}
+
             {/* Return to Platform Overview */}
             <button
               id="header-overview-btn"

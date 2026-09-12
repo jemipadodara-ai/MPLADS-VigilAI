@@ -10,6 +10,9 @@ import {
   ChevronRight,
   ShieldCheck,
   Building,
+  Lock,
+  LogOut,
+  UserCheck,
 } from 'lucide-react';
 
 export type ActiveTab =
@@ -19,7 +22,8 @@ export type ActiveTab =
   | 'contractors'
   | 'map'
   | 'assistant-settings'
-  | 'profile';
+  | 'profile'
+  | 'login';
 
 interface SidebarProps {
   activeTab: ActiveTab;
@@ -47,6 +51,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed,
   onToggleCollapse,
   totalProjectsCount = 22,
+  user,
+  onSignOut,
 }) => {
   // Navigation Items
   const navItems: NavItem[] = [
@@ -82,6 +88,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Sparkles,
     },
   ];
+
+  // If not logged in, add quick link to Officer Login
+  if (!user) {
+    navItems.push({
+      id: 'login',
+      label: 'Officer Sign In',
+      icon: Lock,
+    });
+  }
 
   return (
     <aside
@@ -198,21 +213,70 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
       </div>
 
-      {/* Footer Info */}
+      {/* Footer Info & Auth Controls */}
       <div className="p-3 border-t border-slate-200">
         {!isCollapsed ? (
-          <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1 text-xs">
-            <div className="flex items-center gap-1.5 font-bold text-slate-800">
-              <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
-              <span>MPLADS-VigilAI</span>
+          <div className="space-y-2">
+            {user ? (
+              <div className="p-2.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 overflow-hidden">
+                    <div className="w-6 h-6 rounded-full bg-cyan-100 text-cyan-800 flex items-center justify-center font-bold text-[10px] shrink-0">
+                      <UserCheck className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="truncate">
+                      <div className="font-bold text-slate-800 truncate leading-tight">
+                        {user.name || user.displayName || user.email?.split('@')[0]}
+                      </div>
+                      <div className="text-[10px] text-cyan-700 font-medium capitalize">
+                        {user.role ? user.role.replace('_', ' ') : 'Officer'}
+                      </div>
+                    </div>
+                  </div>
+                  {onSignOut && (
+                    <button
+                      onClick={onSignOut}
+                      className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                      title="Sign Out"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => onSelectTab('login')}
+                className="w-full py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <Lock className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Officer Sign In</span>
+              </button>
+            )}
+
+            <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/60 text-[10px] text-slate-500 leading-snug">
+              Protected by MoSPI AI Vigilance Gateway
             </div>
-            <p className="text-[11px] text-slate-500 leading-snug">
-              Government project risk monitoring and review.
-            </p>
           </div>
         ) : (
-          <div className="flex justify-center py-2 text-slate-400">
-            <ShieldCheck className="w-5 h-5 text-indigo-600" />
+          <div className="flex flex-col items-center gap-2 py-1 text-slate-400">
+            {user && onSignOut ? (
+              <button
+                onClick={onSignOut}
+                className="p-1.5 rounded-xl hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                title="Sign Out"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            ) : (
+              <button
+                onClick={() => onSelectTab('login')}
+                className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-cyan-600 transition-colors cursor-pointer"
+                title="Sign In"
+              >
+                <Lock className="w-4 h-4 text-cyan-600" />
+              </button>
+            )}
           </div>
         )}
       </div>

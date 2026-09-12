@@ -19,16 +19,21 @@ import {
 interface LandingPageProps {
   onEnterPortal: () => void;
   onExploreProjects?: () => void;
+  onNavigateToLogin?: () => void;
   onSelectProject?: (p: any) => void;
   featuredProject?: any;
   totalProjects?: number;
   totalSanctionedCr?: number;
   user?: any;
+  onSignOut?: () => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
   onEnterPortal,
   onExploreProjects,
+  onNavigateToLogin,
+  user,
+  onSignOut,
 }) => {
   const handleGoToProjects = onExploreProjects || onEnterPortal;
 
@@ -52,15 +57,53 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
           </div>
 
-          {/* Quick Action */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleGoToProjects}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold shadow-xs transition-all cursor-pointer"
-            >
-              <span>Explore Projects</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+          {/* Quick Actions */}
+          <div className="flex items-center gap-2.5">
+            {user ? (
+              <div className="flex items-center gap-2">
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="font-bold text-slate-800">{user.name}</span>
+                  <span className="text-slate-400">({user.role})</span>
+                </div>
+                <button
+                  onClick={onEnterPortal}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold shadow-xs transition-all cursor-pointer"
+                >
+                  <span>Risk Dashboard</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+                {onSignOut && (
+                  <button
+                    onClick={onSignOut}
+                    className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition-colors text-xs font-semibold cursor-pointer"
+                    title="Sign Out"
+                  >
+                    Sign Out
+                  </button>
+                )}
+              </div>
+            ) : (
+              <>
+                {onNavigateToLogin && (
+                  <button
+                    id="landing-signin-btn"
+                    onClick={onNavigateToLogin}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold transition-all cursor-pointer"
+                  >
+                    <span>Sign In / Register</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={handleGoToProjects}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold shadow-xs transition-all cursor-pointer"
+                >
+                  <span>Explore Projects</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -68,10 +111,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       {/* 2. Hero Section */}
       <section className="relative pt-16 pb-20 sm:pt-20 sm:pb-24 border-b border-slate-200 bg-gradient-to-b from-white via-white to-slate-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold tracking-wide uppercase shadow-2xs">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Government Project Risk Monitoring</span>
-          </div>
+          {user ? (
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs sm:text-sm font-bold shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Session Active: Welcome back, {user.name} ({user.department || 'MoSPI Directorate'})</span>
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold tracking-wide uppercase shadow-2xs">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Government Project Risk Monitoring</span>
+            </div>
+          )}
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.15]">
             MPLADS-VigilAI
@@ -81,16 +131,48 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             Find government projects that may need attention and understand the reasons behind each risk.
           </p>
 
-          {/* Single Primary CTA */}
-          <div className="pt-2 flex justify-center">
-            <button
-              id="hero-explore-projects-btn"
-              onClick={handleGoToProjects}
-              className="inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-base font-bold shadow-md shadow-indigo-600/20 hover:shadow-indigo-600/30 transition-all cursor-pointer group"
-            >
-              <span>Explore Projects</span>
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
+          {/* Primary Actions */}
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+            {user ? (
+              <>
+                <button
+                  id="hero-enter-dashboard-btn"
+                  onClick={onEnterPortal}
+                  className="inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-base font-bold shadow-md shadow-indigo-600/20 hover:shadow-indigo-600/30 transition-all cursor-pointer group"
+                >
+                  <span>Launch Risk Dashboard</span>
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </button>
+                <button
+                  id="hero-explore-projects-btn"
+                  onClick={handleGoToProjects}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-base font-bold transition-all shadow-xs cursor-pointer"
+                >
+                  <span>Browse All Projects</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  id="hero-explore-projects-btn"
+                  onClick={handleGoToProjects}
+                  className="inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-base font-bold shadow-md shadow-indigo-600/20 hover:shadow-indigo-600/30 transition-all cursor-pointer group"
+                >
+                  <span>Explore Projects</span>
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </button>
+
+                {onNavigateToLogin && (
+                  <button
+                    id="hero-signin-btn"
+                    onClick={onNavigateToLogin}
+                    className="inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-base font-bold transition-all shadow-xs cursor-pointer"
+                  >
+                    <span>Officer Sign In / Register</span>
+                  </button>
+                )}
+              </>
+            )}
           </div>
 
           <div className="pt-4 text-xs text-slate-400 font-medium">
