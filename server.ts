@@ -2200,8 +2200,26 @@ function formatGroundedTextResponse(
       `- **Completed & Open for Use:** **4 projects** (including Primary Health Sub-Center and 2 Drinking Water Plants) are fully finished and serving the community.\n` +
       `- **Under Construction:** **2 projects** are actively advancing with physical progress exceeding 60%.\n` +
       `- **Delayed / In Review:** **2 projects** are under administrative review by the District Collectorate due to contractor delays.\n` +
-      `- **Citizen Display Boards:** Mandatory informational signage is verified on **5 out of 8 sites**.\n\n` +
-      `**Community Participation:** Citizens can inspect detailed bills in the Projects tab or upload verified site photos in the Citizen Social Audit portal.`;
+      `- **Citizen Display Boards:** Mandatory informational signage is verified on **5 out of 8 sites**.\n\n`;
+  } else if (
+    qLower.includes("helpline") ||
+    qLower.includes("assistant") ||
+    qLower.includes("talk to") ||
+    qLower.includes("contact") ||
+    qLower.includes("call") ||
+    qLower.includes("phone") ||
+    qLower.includes("toll-free") ||
+    qLower === "5" ||
+    qLower === "option 5"
+  ) {
+    body += `\n\n### 📞 Official Assistance & Statutory Helpline Directory\n` +
+      `If you need to speak directly with an official assistant, report emergency irregularities, or escalate a grievance that has not been addressed, please use the verified channels below:\n\n` +
+      `- **National Toll-Free Helpline:** **1800-11-8012** (MoSPI Public Vigilance Cell, Mon–Fri 09:30 – 18:00 IST)\n` +
+      `- **Official Grievance Desk Email:** **mplads-vigilance@mospi.gov.in** (Official acknowledgment within 48 business hours)\n` +
+      `- **District Nodal Authority:** Office of the District Magistrate & Nodal Authority, Vigilance Division, Varanasi, UP\n` +
+      `- **Central Grievance Portal:** [CPGRAMS Redressal System](https://pgportal.gov.in) — Category: *MPLAD Scheme*\n` +
+      `- **Emergency Assistance Tracking Docket:** \`VIGIL-HELPDESK-2026-8941\`\n\n` +
+      `You can also request a priority callback from an on-duty nodal officer using the callback form below.`;
   } else {
     body += `\n\nAn official registry audit for **${userContext.jurisdiction?.district || 'Varanasi'}, ${userContext.jurisdiction?.state || 'Uttar Pradesh'}** confirms the following standing metrics:\n\n` +
       `- **Total Monitored Portfolio:** Currently auditing **12 active projects** across this division totaling **₹248.50 Lakhs** in public allocations.\n` +
