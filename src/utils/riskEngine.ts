@@ -156,8 +156,8 @@ export function computeProjectRisk(p: MPLADProject): ProjectRiskDetails {
 
   // Harmonize with existing overallRiskScore if provided in data
   if (p.overallRiskScore !== undefined && p.overallRiskScore !== null && p.overallRiskScore > 0) {
-    // Weighted blend favoring deterministic calculation
-    score = Math.round((score * 0.6) + (p.overallRiskScore * 0.4));
+    // Official ground truth risk score takes precedence for cross-view consistency
+    score = p.overallRiskScore;
   }
 
   // Bound score strictly between 5 and 98

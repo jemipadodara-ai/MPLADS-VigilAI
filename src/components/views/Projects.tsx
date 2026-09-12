@@ -6,19 +6,30 @@ import {
   FileDown,
   Info,
   ShieldCheck,
-  Building,
+  Plus,
 } from 'lucide-react';
-import { MPLADProject } from '../../types';
+import { MPLADProject, canMakeDecisions } from '../../types';
 import { computeProjectRisk, exportProjectsToCSV } from '../../utils/riskEngine';
 import { exportFilteredProjectsToWord } from '../../utils/docxExport';
 import { RiskBadge } from '../RiskBadge';
+import { ProjectFormModal } from '../ProjectFormModal';
 
 interface ProjectsViewProps {
   projects: MPLADProject[];
   onInspectProject: (project: MPLADProject) => void;
+  currentUser?: any;
+  onCreateProject?: (data: Partial<MPLADProject>) => Promise<{ success: boolean; error?: string; project?: any }>;
+  onUpdateProject?: (id: string, updates: Partial<MPLADProject>) => Promise<{ success: boolean; error?: string }>;
 }
 
-export const Projects: React.FC<ProjectsViewProps> = ({ projects, onInspectProject }) => {
+export const Projects: React.FC<ProjectsViewProps> = ({
+  projects,
+  onInspectProject,
+  currentUser,
+  onCreateProject,
+  onUpdateProject,
+}) => {
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedWard, setSelectedWard] = useState('All');
   const [selectedRisk, setSelectedRisk] = useState<string>('All');
@@ -143,6 +154,17 @@ export const Projects: React.FC<ProjectsViewProps> = ({ projects, onInspectProje
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 self-start md:self-auto">
+            {canMakeDecisions(currentUser?.role) && onCreateProject && (
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                title="Create a new MPLADS work entry"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Project</span>
+              </button>
+            )}
+
             <span className="text-xs font-semibold text-slate-500 mr-1">
               Showing <strong className="text-slate-900 font-mono">{filteredProjects.length}</strong> of {projects.length} works
             </span>
@@ -411,6 +433,18 @@ export const Projects: React.FC<ProjectsViewProps> = ({ projects, onInspectProje
           Risk scores and flags assist in identifying projects that may require field verification or administrative review. A flagged risk indicator does not by itself imply wrongdoing.
         </p>
       </div>
+
+      {/* Project Form Modal for creating new projects */}
+      {showCreateModal && onCreateProject && (
+        <ProjectFormModal
+          onClose={() => setShowCreateModal(false)}
+          onSave={async (data) => {
+            const res = await onCreateProject(data);
+            if (res.success) setShowCreateModal(false);
+            return res;
+          }}
+        />
+      )}
     </div>
   );
 };

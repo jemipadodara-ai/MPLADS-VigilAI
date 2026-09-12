@@ -26,6 +26,20 @@ import { GeospatialMap } from './components/views/GeospatialMap';
 import { AssistantAndSettings } from './components/views/AssistantAndSettings';
 import { ProjectDetails } from './components/ProjectDetails';
 
+// New Decision Intelligence & Vigilance Views
+import { NationalCommandCenter } from './components/views/NationalCommandCenter';
+import { DecisionCenter } from './components/views/DecisionCenter';
+import { PredictiveRiskForecastView } from './components/views/PredictiveRiskForecastView';
+import { AuditPrioritizationView } from './components/views/AuditPrioritizationView';
+import { DuplicateDetectionView } from './components/views/DuplicateDetectionView';
+import { CostIntelligenceView } from './components/views/CostIntelligenceView';
+import { ComplianceAuditView } from './components/views/ComplianceAuditView';
+import { InspectionWorkbenchView } from './components/views/InspectionWorkbenchView';
+import { CitizenPortalView } from './components/views/CitizenPortalView';
+import { MinistryBriefingView } from './components/views/MinistryBriefingView';
+import { AiAssistantView } from './components/views/AiAssistantView';
+import { AdminUsersView } from './components/views/AdminUsersView';
+
 // Firebase (for live persistence if available, with immediate local fallback)
 import { db, handleFirestoreError, OperationType } from './firebase';
 import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
@@ -168,6 +182,68 @@ export function App() {
     [selectedProject]
   );
 
+  // Notifications State & Fetch
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const unreadNotificationsCount = notifications.filter((n) => !n.read).length;
+
+  useEffect(() => {
+    fetch('/api/notifications')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.notifications) {
+          setNotifications(data.notifications.slice(0, 50));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Create a new project (officer/minister only)
+  const handleCreateProject = useCallback(
+    async (projectData: Partial<MPLADProject>) => {
+      try {
+        const res = await fetch('/api/projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(projectData),
+        });
+        const data = await res.json();
+        if (data.success && data.project) {
+          setRawProjects((prev) => [data.project as MPLADProject, ...prev]);
+          return { success: true, project: data.project };
+        }
+        return { success: false, error: data.error || 'Failed to create project' };
+      } catch (err: any) {
+        console.error('Project creation error:', err);
+        return { success: false, error: err.message };
+      }
+    },
+    []
+  );
+
+  // Update an existing project
+  const handleUpdateProject = useCallback(
+    async (projectId: string, updates: Partial<MPLADProject>) => {
+      try {
+        const res = await fetch(`/api/projects/${projectId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setRawProjects((prev) =>
+            prev.map((p) => (p.id === projectId ? { ...p, ...updates } : p))
+          );
+          return { success: true };
+        }
+        return { success: false, error: data.error || 'Failed to update project' };
+      } catch (err: any) {
+        return { success: false, error: err.message };
+      }
+    },
+    []
+  );
+
   // ---------------------------------------------------------------------------
   // 1. PUBLIC LANDING PAGE VIEW
   // ---------------------------------------------------------------------------
@@ -176,7 +252,7 @@ export function App() {
       <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased">
         <LandingPage
           onEnterPortal={() => {
-            setActiveTab('dashboard');
+            setActiveTab('national-command');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           onExploreProjects={() => {
@@ -252,6 +328,7 @@ export function App() {
         totalContractorsCount={contractors.length}
         user={currentUser}
         onSignOut={handleSignOut}
+        notificationsCount={unreadNotificationsCount}
       />
 
       {/* 2. Main Application Canvas */}
@@ -269,11 +346,23 @@ export function App() {
                 MPLADS-VigilAI • Project Risk Monitoring
               </div>
               <h1 className="text-sm sm:text-base font-black text-slate-900 truncate">
+                {activeTab === 'national-command' && 'National Command Center'}
+                {activeTab === 'ai-copilot' && 'AI Grounded Vigilance Copilot'}
+                {activeTab === 'decision-center' && 'Decision Center & Case Authorization'}
+                {activeTab === 'executive-briefing' && 'Executive Vigilance Briefing'}
+                {activeTab === 'risk-forecast' && 'Predictive Risk Forecasting'}
+                {activeTab === 'audit-prioritization' && 'Audit Prioritization Engine'}
+                {activeTab === 'duplicate-detection' && 'Duplicate Work & Asset Detection'}
+                {activeTab === 'cost-intelligence' && 'Cost Intelligence & SoR Benchmarks'}
+                {activeTab === 'compliance-center' && 'Statutory Compliance Center'}
+                {activeTab === 'inspection-workbench' && 'On-Site Inspection Workbench'}
+                {activeTab === 'citizen-portal' && 'Citizen Social Audit & Verification'}
                 {activeTab === 'dashboard' && 'Risk Dashboard'}
                 {activeTab === 'projects' && 'Projects Master Registry'}
                 {activeTab === 'contractors' && 'Contractor Performance & Registry'}
                 {activeTab === 'map' && 'Geospatial Project Map'}
                 {activeTab === 'assistant-settings' && 'Platform Settings'}
+                {activeTab === 'admin-users' && 'User Accounts & Access Control'}
               </h1>
             </div>
           </div>
@@ -341,6 +430,109 @@ export function App() {
 
         {/* 3. Primary Content Area Based on Active Tab */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl w-full mx-auto">
+          {/* Tab: National Command Center */}
+          {activeTab === 'national-command' && (
+            <NationalCommandCenter
+              projects={scoredProjects}
+              onNavigateToDecisionCenter={() => setActiveTab('decision-center')}
+              onNavigateToAuditPrioritization={() => setActiveTab('audit-prioritization')}
+              onNavigateToDuplicateDetection={() => setActiveTab('duplicate-detection')}
+              onNavigateToCostIntelligence={() => setActiveTab('cost-intelligence')}
+              onInspectProject={(p) => setSelectedProject(p)}
+            />
+          )}
+
+          {/* Tab: AI Copilot */}
+          {activeTab === 'ai-copilot' && (
+            <AiAssistantView
+              projects={scoredProjects}
+              currentUser={currentUser}
+              onSelectProjectByWorkCode={(code) => {
+                const found = scoredProjects.find(
+                  (p) => p.workCode === code || p.id === code
+                );
+                if (found) setSelectedProject(found);
+              }}
+            />
+          )}
+
+          {/* Tab: Decision Center */}
+          {activeTab === 'decision-center' && (
+            <DecisionCenter
+              projects={scoredProjects}
+              onInspectProject={(p) => setSelectedProject(p)}
+              currentUser={currentUser}
+            />
+          )}
+
+          {/* Tab: Executive Briefing */}
+          {activeTab === 'executive-briefing' && (
+            <MinistryBriefingView
+              projects={scoredProjects}
+              onNavigateToDecisionCenter={() => setActiveTab('decision-center')}
+            />
+          )}
+
+          {/* Tab: Predictive Risk Forecast */}
+          {activeTab === 'risk-forecast' && (
+            <PredictiveRiskForecastView
+              projects={scoredProjects}
+              onInspectProject={(p) => setSelectedProject(p)}
+            />
+          )}
+
+          {/* Tab: Audit Prioritization */}
+          {activeTab === 'audit-prioritization' && (
+            <AuditPrioritizationView
+              projects={scoredProjects}
+              onInspectProject={(p) => setSelectedProject(p)}
+              currentUser={currentUser}
+            />
+          )}
+
+          {/* Tab: Duplicate Detection */}
+          {activeTab === 'duplicate-detection' && (
+            <DuplicateDetectionView
+              projects={scoredProjects}
+              onInspectProject={(p) => setSelectedProject(p)}
+              currentUser={currentUser}
+            />
+          )}
+
+          {/* Tab: Cost Intelligence */}
+          {activeTab === 'cost-intelligence' && (
+            <CostIntelligenceView
+              projects={scoredProjects}
+              onInspectProject={(p) => setSelectedProject(p)}
+            />
+          )}
+
+          {/* Tab: Compliance Center */}
+          {activeTab === 'compliance-center' && (
+            <ComplianceAuditView
+              projects={scoredProjects}
+              onInspectProject={(p) => setSelectedProject(p)}
+              currentUser={currentUser}
+            />
+          )}
+
+          {/* Tab: Inspection Workbench */}
+          {activeTab === 'inspection-workbench' && (
+            <InspectionWorkbenchView
+              projects={scoredProjects}
+              onInspectProject={(p) => setSelectedProject(p)}
+              currentUser={currentUser}
+            />
+          )}
+
+          {/* Tab: Citizen Portal */}
+          {activeTab === 'citizen-portal' && (
+            <CitizenPortalView
+              projects={scoredProjects}
+              onInspectProject={(p) => setSelectedProject(p)}
+            />
+          )}
+
           {/* Tab: Dashboard */}
           {activeTab === 'dashboard' && (
             <Dashboard
@@ -357,6 +549,9 @@ export function App() {
             <Projects
               projects={scoredProjects}
               onInspectProject={(p) => setSelectedProject(p)}
+              currentUser={currentUser}
+              onCreateProject={handleCreateProject}
+              onUpdateProject={handleUpdateProject}
             />
           )}
 
@@ -381,6 +576,7 @@ export function App() {
           {activeTab === 'assistant-settings' && (
             <AssistantAndSettings
               projects={scoredProjects}
+              currentUser={currentUser}
               onSelectProjectByWorkCode={(code) => {
                 const found = scoredProjects.find(
                   (p) => p.workCode === code || p.id === code
@@ -388,6 +584,11 @@ export function App() {
                 if (found) setSelectedProject(found);
               }}
             />
+          )}
+
+          {/* Tab: User Accounts & Roles (Admin) */}
+          {activeTab === 'admin-users' && (
+            <AdminUsersView currentUser={currentUser} />
           )}
         </main>
       </div>

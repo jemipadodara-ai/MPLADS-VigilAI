@@ -1,0 +1,22 @@
+{
+  "dataset": "Documented Synthetic Benchmark (n=300, 20% Anomaly Injection)",
+  "delay_prediction": {
+    "model": "RandomForestRegressor",
+    "MAE_days": 1.2,
+    "RMSE_days": 8.08,
+    "R2_score": 0.996
+  },
+  "cost_prediction": {
+    "model": "RandomForestRegressor",
+    "MAE_Lakhs": 1.73,
+    "RMSE_Lakhs": 5.12,
+    "R2_score": 0.878
+  },
+  "anomaly_detection": {
+    "model": "IsolationForest",
+    "Precision": 0.4,
+    "Recall": 0.4,
+    "F1_Score": 0.4
+  },
+  "evaluated_at": "2026-09-12T09:52:45.722675"
+}

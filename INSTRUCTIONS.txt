@@ -1,0 +1,117 @@
+================================================================================
+  MPLADS VigilAI — Complete Run & Setup Instructions
+  Ministry of Statistics & Programme Implementation (MoSPI) Vigilance Platform
+================================================================================
+
+--------------------------------------------------------------------------------
+1. QUICK START (RUN BACKEND + FRONTEND TOGETHER)
+--------------------------------------------------------------------------------
+
+The project is configured so that a single command runs BOTH the Express backend 
+and the Vite React frontend with Hot Module Replacement (HMR):
+
+Step 1: Open a terminal in the project root folder:
+        c:\Users\DELL\Desktop\abha\MPLADS VigilAI
+
+Step 2: Install Node.js dependencies (if not already done):
+        npm install
+
+Step 3: Start the full-stack application:
+        npm run dev
+
+Step 4: Open your web browser and visit:
+        http://localhost:3000
+
+The server automatically serves both the API routes (/api/*) and the React UI.
+
+
+--------------------------------------------------------------------------------
+2. (OPTIONAL) RUNNING THE PYTHON ML MICROSERVICE (PORT 5001)
+--------------------------------------------------------------------------------
+
+The project includes trained machine learning models (Isolation Forest for anomaly
+detection, Random Forest for delay regression, and cost benchmark regressors).
+
+* NOTE: If Python is NOT running, the application automatically uses its built-in
+  TypeScript ML engine fallback with identical risk-weighting logic. You can use
+  the entire application without Python!
+
+If you wish to run the real Python FastAPI inference microservice:
+
+Step 1: Open a second terminal window.
+Step 2: Navigate to the ml-service folder:
+        cd ml-service
+
+Step 3: Install Python requirements (Python 3.10+ recommended):
+        pip install -r requirements.txt
+
+Step 4: Start the FastAPI service on port 5001:
+        python app.py
+        (or: uvicorn app:app --host 0.0.0.0 --port 5001)
+
+The Node.js server and frontend will automatically detect the Python service at:
+        http://localhost:5001
+
+
+--------------------------------------------------------------------------------
+3. RUNNING IN PRODUCTION MODE
+--------------------------------------------------------------------------------
+
+To build and run an optimized production bundle:
+
+Step 1: Build both the React frontend and the Express bundle:
+        npm run build
+
+Step 2: Run the production server:
+        npm start
+
+Step 3: Open your browser at:
+        http://localhost:3000
+
+
+--------------------------------------------------------------------------------
+4. PRE-CONFIGURED DEMO ACCOUNTS (ALL ROLES)
+--------------------------------------------------------------------------------
+
+Password for ALL pre-configured accounts: VigilAI@2026
+
+Role                Email                     Clearance / Permissions
+--------------------------------------------------------------------------------
+Minister            minister@mplads.vigilai   Executive: Freeze funds, assign inquiries,
+                                              issue statutory show-cause directives.
+Admin               admin@mplads.vigilai      Super Admin: User role management, full
+                                              access, data synchronization.
+District Magistrate district@mplads.vigilai   Officer: Issue local inspections, update
+                                              cases, review billing ledgers.
+Nodal Officer       nodal@mplads.vigilai      Officer: On-site inspection workbench,
+                                              evidence verification, field checklist.
+MP                  mp@mplads.vigilai         Officer: Monitor constituency works,
+                                              review citizen reports.
+Audit Analyst       analyst@mplads.vigilai    Officer: Audit prioritization, export
+                                              compliance dossiers and DOCX briefs.
+Citizen Watchdog    citizen@mplads.vigilai    Public/Viewer: View-only access to all
+                                              registries; can submit ground reports.
+Public Viewer       viewer@mplads.vigilai     Public/Viewer: Read-only access.
+
+
+--------------------------------------------------------------------------------
+5. VERIFICATION COMMANDS
+--------------------------------------------------------------------------------
+
+- Check TypeScript types:
+  npm run lint
+
+- Test full production compilation:
+  npm run build
+
+
+--------------------------------------------------------------------------------
+6. ARCHITECTURE SUMMARY
+--------------------------------------------------------------------------------
+
+- Frontend:      React 19 + TypeScript + Tailwind CSS + Lucide Icons + Vite
+- Backend:       Express (server.ts) on Port 3000 (serves APIs + static/HMR UI)
+- Database:      Firebase Firestore (dual-persisting: memory cache + cloud docs)
+- ML Service:    FastAPI + scikit-learn on Port 5001 (with native TS fallback)
+- Authentication: JWT in HTTP-only cookies + Role-Based Access Control (RBAC)
+================================================================================

@@ -383,3 +383,329 @@ export interface ProjectFilterState {
   completionMin?: number;
   completionMax?: number;
 }
+
+// ---------------------------------------------------------------------------
+// DECISION INTELLIGENCE & VIGILANCE PLATFORM EXTENSIONS
+// ---------------------------------------------------------------------------
+
+export type PlatformRole =
+  | 'minister'       // Hon. Union / State Minister (Executive decisions, payment freezes, statutory orders)
+  | 'admin'          // Ministry / National Administrator
+  | 'district'       // District Magistrate / District Collector
+  | 'nodal_officer'  // District Nodal Authority / District Officer
+  | 'state_nodal'    // State Nodal Authority
+  | 'mp'             // Member of Parliament
+  | 'analyst'        // Senior Vigilance / Audit Analyst
+  | 'citizen'        // Citizen / Public User (View-only, cannot execute decisions)
+  | 'viewer';        // Public Observer (View-only)
+
+export interface MinisterActionRecord {
+  id: string;
+  actionId: string;
+  caseId: string;
+  projectId?: string;
+  workCode?: string;
+  projectTitle?: string;
+  actionType: string;
+  ministerName: string;
+  ministerEmail: string;
+  ministerRole: string;
+  notes: string;
+  directives?: string;
+  statusTransition?: { from: string; to: string };
+  officerAssigned?: string;
+  deadlineDate?: string;
+  statutoryClause?: string;
+  timestamp: string;
+  digitalSignature?: string;
+}
+
+export const canMakeDecisions = (role?: string | null): boolean => {
+  if (!role) return false;
+  const r = role.toLowerCase();
+  return ['minister', 'admin', 'district', 'nodal_officer', 'mp'].includes(r);
+};
+
+export const isMinister = (role?: string | null): boolean => {
+  if (!role) return false;
+  const r = role.toLowerCase();
+  return r === 'minister' || r === 'admin';
+};
+
+export const isCitizenOrViewer = (role?: string | null): boolean => {
+  if (!role) return true;
+  const r = role.toLowerCase();
+  return r === 'citizen' || r === 'viewer';
+};
+
+export type FraudStatus =
+  | 'NOT_ESTABLISHED'
+  | 'REQUIRES_VERIFICATION'
+  | 'UNDER_INVESTIGATION'
+  | 'SUBSTANTIATED'
+  | 'CLOSED';
+
+export type PriorityLevel = 'P0' | 'P1' | 'P2' | 'P3';
+
+export type InterventionType =
+  | 'Physical Inspection'
+  | 'Payment Review'
+  | 'Document Verification'
+  | 'Contractor Review'
+  | 'Duplicate Work Review'
+  | 'Compliance Review'
+  | 'Citizen Verification'
+  | 'Closure / Resolution';
+
+export type ResponsibleAuthority =
+  | 'District Nodal Authority'
+  | 'State Nodal Authority'
+  | 'Ministry of Statistics & PI'
+  | 'Implementing Agency'
+  | 'Internal Audit Wing';
+
+export type CaseStatus =
+  | 'New'
+  | 'Under Review'
+  | 'Inspection Assigned'
+  | 'Evidence Pending'
+  | 'Action Required'
+  | 'Under Investigation'
+  | 'Resolved'
+  | 'Closed'
+  | 'False Positive';
+
+export interface CaseTimelineEvent {
+  id: string;
+  timestamp: string;
+  action: string;
+  performedBy: string;
+  notes?: string;
+  statusTransition?: { from: CaseStatus; to: CaseStatus };
+  evidenceAttached?: string[];
+}
+
+export interface RiskDecomposition {
+  financialAnomaly: number; // e.g. +25
+  progressMismatch: number; // e.g. +20
+  delayPoints: number;      // e.g. +15
+  contractorRisk: number;   // e.g. +10
+  duplicateProbability: number; // e.g. +12
+  dataQualityRisk: number;  // e.g. +5
+  totalScore: number;       // e.g. 87/100
+}
+
+export interface FiveQuestionModel {
+  whatHappened: string;
+  whyUnusual: string;
+  howSerious: string;
+  whatNext: string;
+  evidenceRequired: string[];
+}
+
+export interface DecisionCase {
+  id: string; // e.g. CASE-2026-089
+  projectId: string;
+  projectTitle: string;
+  location: string;
+  state: string;
+  district: string;
+  constituency: string;
+  sanctionedLakhs: number;
+  expenditureLakhs: number;
+  physicalProgressPct: number;
+  financialExposureLakhs: number;
+  riskScore: number;
+  riskLevel: RiskLevel;
+  riskFactors: RiskFactor[];
+  riskDecomposition: RiskDecomposition;
+  primaryAnomaly: string;
+  fiveQuestions: FiveQuestionModel;
+  recommendedAction: string;
+  interventionType: InterventionType;
+  responsibleAuthority: ResponsibleAuthority;
+  priority: PriorityLevel;
+  evidenceRequired: string[];
+  caseStatus: CaseStatus;
+  fraudStatus: FraudStatus;
+  confidencePct: number;
+  assignedOfficer?: string;
+  assignedOfficerEmail?: string;
+  deadlineDate?: string;
+  timeline: CaseTimelineEvent[];
+  notes?: string;
+  citizenReportsCount: number;
+  contractorName: string;
+  implementingAgency: string;
+  createdAt: string;
+  updatedAt: string;
+  activeDirective?: string;
+  directiveDate?: string;
+  directiveBy?: string;
+  directiveNotes?: string;
+}
+
+export interface PredictiveRiskForecast {
+  projectId: string;
+  projectTitle: string;
+  currentRisk: number;
+  forecast30d: number;
+  forecast60d: number;
+  forecast90d: number;
+  spendingVelocityLakhsPerMonth: number;
+  progressVelocityPctPerMonth: number;
+  delayDays: number;
+  riskTrajectory: 'Escalating' | 'Stable' | 'De-escalating';
+  factors: string[];
+  isDeterministicModel: boolean;
+}
+
+export interface DuplicateWorkPair {
+  id: string;
+  projectA: MPLADProject;
+  projectB: MPLADProject;
+  similarityPercentage: number;
+  distanceKm: number;
+  reasons: string[];
+  recommendedAction: string;
+  confidencePct: number;
+  status: 'Flagged' | 'Under Investigation' | 'Verified Distinct' | 'Confirmed Duplicate';
+}
+
+export interface CostBenchmarkAnalysis {
+  projectId: string;
+  projectTitle: string;
+  category: string;
+  district: string;
+  state: string;
+  observedCostLakhs: number;
+  benchmarkRangeLakhs: [number, number];
+  costVariancePct: number;
+  confidencePct: number;
+  isOverpriced: boolean;
+  comparableCount: number;
+  comparableProjects: {
+    id: string;
+    title: string;
+    costLakhs: number;
+    district: string;
+  }[];
+  explanation: string;
+  recommendedAction: string;
+}
+
+export type ComplianceCheckStatus = 'Compliant' | 'Warning' | 'Non-compliant' | 'Unknown / Missing Data';
+
+export interface ProjectComplianceAudit {
+  projectId: string;
+  eligibility: ComplianceCheckStatus;
+  administrativeApproval: ComplianceCheckStatus;
+  technicalApproval: ComplianceCheckStatus;
+  tenderCompliance: ComplianceCheckStatus;
+  financialUtilization: ComplianceCheckStatus;
+  physicalProgress: ComplianceCheckStatus;
+  geoVerification: ComplianceCheckStatus;
+  completionDocumentation: ComplianceCheckStatus;
+  utilizationCertificate: ComplianceCheckStatus;
+  auditDocumentation: ComplianceCheckStatus;
+  overallComplianceScore: number; // 0 - 100
+  flaggedItems: string[];
+}
+
+export type CitizenReportCategory =
+  | 'Missing Asset'
+  | 'Incomplete Work'
+  | 'Poor Quality'
+  | 'Wrong Location'
+  | 'Duplicate Work'
+  | 'Non-functional Asset'
+  | 'Incorrect Status'
+  | 'Other';
+
+export interface CitizenReportSubmission {
+  id: string;
+  projectId: string;
+  projectTitle: string;
+  location: string;
+  district: string;
+  state: string;
+  category: CitizenReportCategory;
+  description: string;
+  verificationVerdict: 'Yes' | 'No' | 'Partially Completed' | 'Cannot Verify';
+  evidencePriority: PriorityLevel;
+  hasGps: boolean;
+  hasPhoto: boolean;
+  gpsCoordinates?: { lat: number; lng: number };
+  photoUrl?: string;
+  corroborationCount: number;
+  submittedAt: string;
+  citizenContact?: string;
+  isAnonymous: boolean;
+  status: 'Pending Triage' | 'Corroborated' | 'Dispatched to Officer' | 'Inspected' | 'Resolved';
+}
+
+export interface InspectionAssignment {
+  id: string; // e.g. INSP-2026-042
+  caseId: string;
+  projectId: string;
+  projectTitle: string;
+  district: string;
+  state: string;
+  assignedOfficerName: string;
+  officerDesignation: string;
+  assignedAuthority: ResponsibleAuthority;
+  deadlineDate: string;
+  priority: PriorityLevel;
+  status:
+    | 'Pending Assignment'
+    | 'Scheduled'
+    | 'Field Work in Progress'
+    | 'Evidence Uploaded'
+    | 'Report Submitted'
+    | 'Verified'
+    | 'Discrepancy Confirmed';
+  objectives: string[];
+  checklist: {
+    id: string;
+    task: string;
+    completed: boolean;
+    findings?: string;
+  }[];
+  gpsCoordinates: { lat: number; lng: number };
+  requiredDocuments: string[];
+  uploadedEvidence: {
+    id: string;
+    title: string;
+    type: 'Photo' | 'Measurement Book' | 'Voucher' | 'GeoTag' | 'Inspection Note';
+    url: string;
+    timestamp: string;
+    uploadedBy: string;
+  }[];
+  inspectionNotes: string;
+  officerFindings: string;
+  lastUpdated: string;
+}
+
+export interface MinistryRecommendation {
+  id: string;
+  priority: PriorityLevel;
+  issue: string;
+  evidence: string;
+  impact: string;
+  recommendedIntervention: string;
+  responsibleAuthority: ResponsibleAuthority;
+  targetCount: number;
+  financialExposureLakhs: number;
+}
+
+export interface NationalRiskIndex {
+  currentValue: number; // e.g. 46.8
+  previousPeriodValue: number; // e.g. 52.1
+  trend: 'Improving' | 'Deteriorating' | 'Stable';
+  trendDelta: number; // e.g. -5.3
+  majorContributingFactors: {
+    factor: string;
+    impactPercentage: number;
+    direction: 'Up' | 'Down';
+  }[];
+}

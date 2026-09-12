@@ -1,0 +1,29 @@
+{
+  "feature_names": [
+    "sanctionAmount",
+    "expenditure",
+    "expenditureRatio",
+    "financialProgress",
+    "physicalProgress",
+    "progressGap",
+    "projectAge",
+    "expectedDuration",
+    "daysDelayed",
+    "paymentCount",
+    "paymentVelocity",
+    "contractorProjectCount",
+    "contractorTotalValue",
+    "citizenReportCount",
+    "documentationCompleteness",
+    "geoVerification",
+    "distanceToSimilarProject"
+  ],
+  "n_samples": 1000,
+  "contamination": 0.2,
+  "models": [
+    "IsolationForest",
+    "RandomForestRegressor(Delay)",
+    "RandomForestRegressor(Cost)"
+  ],
+  "trained_at": "2026-09-12T09:52:27.242722"
+}

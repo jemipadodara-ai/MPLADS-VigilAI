@@ -11,6 +11,7 @@ interface AssistantAndSettingsProps {
   isLoadingData?: boolean;
   userRole?: 'admin' | 'standard';
   isRoleLoading?: boolean;
+  currentUser?: any;
 }
 
 export const AssistantAndSettings: React.FC<AssistantAndSettingsProps> = ({
@@ -20,6 +21,7 @@ export const AssistantAndSettings: React.FC<AssistantAndSettingsProps> = ({
   isLoadingData = false,
   userRole = 'admin',
   isRoleLoading = false,
+  currentUser,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'assistant' | 'settings'>('assistant');
 
@@ -88,6 +90,7 @@ export const AssistantAndSettings: React.FC<AssistantAndSettingsProps> = ({
           <AiAssistantView
             projects={projects}
             onSelectProjectByWorkCode={onSelectProjectByWorkCode}
+            currentUser={currentUser}
           />
         ) : (
           <SettingsView

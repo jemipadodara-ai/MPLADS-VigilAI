@@ -29,25 +29,38 @@ import {
 import { auth, db } from '../../firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
+import { PlatformRole, canMakeDecisions } from '../../types';
 
 // Maximum failed login attempts before temporary lockout
 const MAX_LOGIN_ATTEMPTS = 7;
+
+// Valid RBAC Roles
+export const ALLOWED_ROLES = [
+  'minister',
+  'district',
+  'citizen',
+  'admin',
+  'nodal_officer',
+  'mp',
+  'analyst',
+  'viewer',
+] as const;
 
 // Sign In Validation Schema
 const loginSchema = z.object({
   email: z
     .string()
     .min(1, 'Email or username is required')
-    .email('Please enter a valid email address (e.g. admin@mplads.vigilai or officer@nic.in)'),
+    .email('Please enter a valid email address (e.g. minister@mplads.vigilai or citizen@mplads.vigilai)'),
   password: z.string().min(1, 'Password is required'),
-  role: z.enum(['admin', 'nodal_officer', 'mp', 'analyst'] as const).default('admin'),
+  role: z.enum(ALLOWED_ROLES).default('minister'),
   rememberMe: z.boolean().default(false),
 });
 
 export type LoginFormData = {
   email: string;
   password: string;
-  role: 'admin' | 'nodal_officer' | 'mp' | 'analyst';
+  role: PlatformRole;
   rememberMe: boolean;
 };
 
@@ -58,13 +71,13 @@ const registerSchema = z
     email: z
       .string()
       .min(1, 'Official Email is required')
-      .email('Please enter a valid official email address'),
-    role: z.enum(['admin', 'nodal_officer', 'mp', 'analyst'] as const).default('nodal_officer'),
-    department: z.string().min(2, 'Department or Constituency is required'),
+      .email('Please enter a valid official or personal email address'),
+    role: z.enum(ALLOWED_ROLES).default('citizen'),
+    department: z.string().min(2, 'Department, Constituency, or City is required'),
     password: z.string().min(6, 'Password must be at least 6 characters long'),
     confirmPassword: z.string().min(6, 'Please confirm your password'),
     undertaking: z.boolean().refine((val) => val === true, {
-      message: 'You must certify statutory authorization under GFR Rule 144',
+      message: 'You must certify statutory authorization or accept citizen transparency terms',
     }),
     rememberMe: z.boolean().default(false),
   })
@@ -78,7 +91,7 @@ export type RegisterFormData = z.infer<typeof registerSchema>;
 export interface AuthenticatedUser {
   email: string;
   name: string;
-  role: 'admin' | 'nodal_officer' | 'mp' | 'analyst';
+  role: PlatformRole;
   department: string;
   token?: string;
   lastLogin?: string;
@@ -88,7 +101,7 @@ interface StoredUserAccount {
   email: string;
   pass: string;
   name: string;
-  role: 'admin' | 'nodal_officer' | 'mp' | 'analyst';
+  role: PlatformRole;
   department: string;
   createdAt: string;
 }
@@ -112,40 +125,87 @@ const saveRegisteredUser = (user: StoredUserAccount) => {
   }
 };
 
-const PRECONFIGURED_USERS: Record<
+export const PRECONFIGURED_USERS: Record<
   string,
-  { pass: string; name: string; role: 'admin' | 'nodal_officer' | 'mp' | 'analyst'; department: string }
+  {
+    pass: string;
+    name: string;
+    role: PlatformRole;
+    department: string;
+    description: string;
+    badge: string;
+    canDecide: boolean;
+  }
 > = {
+  'minister@mplads.vigilai': {
+    pass: 'VigilAI@2026',
+    name: 'Hon. Union Minister Shri P. K. Rao',
+    role: 'minister',
+    department: 'Ministry of Statistics and Programme Implementation (MoSPI)',
+    description: 'Executive Authority: Freeze disbursements, assign field inquiries, issue show-cause notices. All decisions recorded in statutory registry.',
+    badge: 'Executive Clearance',
+    canDecide: true,
+  },
+  'district@mplads.vigilai': {
+    pass: 'VigilAI@2026',
+    name: 'Dr. Amit Sharma, IAS (District Magistrate)',
+    role: 'district',
+    department: 'Office of the District Magistrate & Nodal Authority',
+    description: 'Competent District Authority: Issue local inspections, review billing, execute enforcement.',
+    badge: 'District Authority',
+    canDecide: true,
+  },
+  'citizen@mplads.vigilai': {
+    pass: 'VigilAI@2026',
+    name: 'Citizen Watchdog (Public Observer)',
+    role: 'citizen',
+    department: 'Public Transparency & Social Audit Cell',
+    description: 'View-Only Access: Inspect all project data, AI fraud scores, ML predictions, and case files. Cannot make administrative decisions.',
+    badge: 'View-Only Access',
+    canDecide: false,
+  },
   'admin@mplads.vigilai': {
     pass: 'VigilAI@2026',
     name: 'Chief Vigilance Administrator',
     role: 'admin',
     department: 'Ministry of Statistics and Programme Implementation (MoSPI)',
+    description: 'System administration: Full governance, model tuning, and case supervision.',
+    badge: 'Super Admin',
+    canDecide: true,
   },
   'nodal@mplads.vigilai': {
     pass: 'VigilAI@2026',
     name: 'District Nodal Officer',
     role: 'nodal_officer',
     department: 'Office of the District Magistrate / Collectorate',
+    description: 'Technical inspection oversight and evidence verification.',
+    badge: 'Nodal Officer',
+    canDecide: true,
   },
   'mp@mplads.vigilai': {
     pass: 'VigilAI@2026',
     name: 'Hon. Member of Parliament',
     role: 'mp',
     department: 'Parliament of India (Lok Sabha / Rajya Sabha)',
+    description: 'Parliamentary constituency oversight and progress reviews.',
+    badge: 'Parliamentarian',
+    canDecide: true,
   },
   'analyst@mplads.vigilai': {
     pass: 'VigilAI@2026',
     name: 'Senior Audit Analyst',
     role: 'analyst',
     department: 'Comptroller & Auditor General (CAG) Cell',
+    description: 'Vigilance analytics and anomaly deep-dives.',
+    badge: 'Auditor',
+    canDecide: false,
   },
 };
 
 interface LoginPageProps {
   onLoginSuccess: (user: AuthenticatedUser) => void;
   onExplorePublic?: () => void;
-  initialRole?: 'admin' | 'nodal_officer' | 'mp' | 'analyst';
+  initialRole?: PlatformRole;
   initialMode?: 'signin' | 'signup';
 }
 

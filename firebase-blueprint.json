@@ -128,6 +128,22 @@
         "timestamp": { "type": "string" }
       },
       "required": ["id", "action", "userEmail", "timestamp"]
+    },
+    "minister_action": {
+      "title": "MinisterAction",
+      "description": "Statutory actions, fund freezes, and directives issued by ministers and executive officials",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "actionId": { "type": "string" },
+        "caseId": { "type": "string" },
+        "actionType": { "type": "string" },
+        "ministerName": { "type": "string" },
+        "ministerRole": { "type": "string" },
+        "directives": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "actionType", "ministerName", "timestamp"]
     }
   },
   "firestore": {
@@ -142,6 +158,18 @@
     "/projects/{projectId}": {
       "entity": "project",
       "description": "Detailed project level works"
+    },
+    "/cases/{caseId}": {
+      "entity": "case",
+      "description": "Statutory vigilance investigation cases"
+    },
+    "/inspections/{inspectionId}": {
+      "entity": "inspection",
+      "description": "Field inquiry and technical inspection assignments"
+    },
+    "/minister_actions/{actionId}": {
+      "entity": "minister_action",
+      "description": "Decisions and orders executed by ministers and nodal officers"
     },
     "/alerts/{alertId}": {
       "entity": "alert",
