@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Globe,
   LayoutDashboard,
@@ -25,6 +25,8 @@ import {
   FileText,
 } from 'lucide-react';
 import { isCitizenOrViewer, canMakeDecisions } from '../types';
+import { useTranslation } from '../i18n/LanguageContext';
+import { LanguageSelector } from './shared/LanguageSelector';
 
 export type ActiveTab =
   | 'landing'
@@ -80,127 +82,132 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSignOut,
   notificationsCount = 0,
 }) => {
-  // Navigation Items
-  const navItems: NavItem[] = [
-    {
-      id: 'landing',
-      label: 'Platform Overview',
-      icon: Globe,
-    },
-    {
-      id: 'national-command',
-      label: 'Command Center',
-      icon: Compass,
-      section: 'DECISION INTELLIGENCE',
-    },
-    {
-      id: 'ai-copilot',
-      label: 'AI Vigilance Copilot',
-      icon: Sparkles,
-      badge: 'Grounded',
-      section: 'DECISION INTELLIGENCE',
-    },
-    {
-      id: 'decision-center',
-      label: 'Decision Center',
-      icon: Scale,
-      badge: 'Action',
-      section: 'DECISION INTELLIGENCE',
-    },
-    {
-      id: 'executive-briefing',
-      label: 'Executive Briefing',
-      icon: Building2,
-      section: 'DECISION INTELLIGENCE',
-    },
-    {
-      id: 'risk-forecast',
-      label: 'Risk Forecast',
-      icon: TrendingUp,
-      section: 'VIGILANCE & AUDIT',
-    },
-    {
-      id: 'audit-prioritization',
-      label: 'Audit Prioritization',
-      icon: ListOrdered,
-      section: 'VIGILANCE & AUDIT',
-    },
-    {
-      id: 'duplicate-detection',
-      label: 'Duplicate Detection',
-      icon: Copy,
-      section: 'VIGILANCE & AUDIT',
-    },
-    {
-      id: 'cost-intelligence',
-      label: 'Cost Intelligence',
-      icon: DollarSign,
-      section: 'VIGILANCE & AUDIT',
-    },
-    {
-      id: 'compliance-center',
-      label: 'Compliance Center',
-      icon: FileCheck2,
-      section: 'VIGILANCE & AUDIT',
-    },
-    {
-      id: 'inspection-workbench',
-      label: 'Inspection Workbench',
-      icon: ClipboardList,
-      section: 'FIELD & CITIZEN',
-    },
-    {
-      id: 'citizen-portal',
-      label: 'Citizen Vigilance',
-      icon: Users,
-      section: 'FIELD & CITIZEN',
-    },
-    {
-      id: 'dashboard',
-      label: 'Anomaly Dashboard',
-      icon: LayoutDashboard,
-      section: 'CORE REGISTRIES',
-    },
-    {
-      id: 'projects',
-      label: 'Projects Registry',
-      icon: FolderGit2,
-      badge: totalProjectsCount,
-      section: 'CORE REGISTRIES',
-    },
-    {
-      id: 'contractors',
-      label: 'Contractor Registry',
-      icon: Building,
-      section: 'CORE REGISTRIES',
-    },
-    {
-      id: 'map',
-      label: 'Geospatial Map',
-      icon: MapPin,
-      section: 'CORE REGISTRIES',
-    },
-    {
-      id: 'admin-users',
-      label: 'User Accounts',
-      icon: Users,
-      section: 'ADMINISTRATION',
-    },
-    {
-      id: 'assistant-settings',
-      label: 'Settings',
-      icon: Sparkles,
-    },
-  ];
+  const { t } = useTranslation();
 
-  // If not logged in, add quick link to Officer Login
-  if (!user) {
-    navItems.push({
-      id: 'login',
-      label: 'Officer Sign In',
-      icon: Lock,
-    });
-  }
+  // Navigation Items
+  const navItems: NavItem[] = useMemo(() => {
+    const items: NavItem[] = [
+      {
+        id: 'landing',
+        label: t('nav.overview', 'Platform Overview'),
+        icon: Globe,
+      },
+      {
+        id: 'national-command',
+        label: t('nav.commandCenter', 'Command Center'),
+        icon: Compass,
+        section: t('nav.sectionDecision', 'DECISION INTELLIGENCE'),
+      },
+      {
+        id: 'ai-copilot',
+        label: t('nav.aiCopilot', 'AI Vigilance Copilot'),
+        icon: Sparkles,
+        badge: 'Grounded',
+        section: t('nav.sectionDecision', 'DECISION INTELLIGENCE'),
+      },
+      {
+        id: 'decision-center',
+        label: t('nav.decisionCenter', 'Decision Center'),
+        icon: Scale,
+        badge: 'Action',
+        section: t('nav.sectionDecision', 'DECISION INTELLIGENCE'),
+      },
+      {
+        id: 'executive-briefing',
+        label: t('nav.executiveBriefing', 'Executive Briefing'),
+        icon: Building2,
+        section: t('nav.sectionDecision', 'DECISION INTELLIGENCE'),
+      },
+      {
+        id: 'risk-forecast',
+        label: t('nav.riskForecast', 'Risk Forecast'),
+        icon: TrendingUp,
+        section: t('nav.sectionVigilance', 'VIGILANCE & AUDIT'),
+      },
+      {
+        id: 'audit-prioritization',
+        label: t('nav.auditPrioritization', 'Audit Prioritization'),
+        icon: ListOrdered,
+        section: t('nav.sectionVigilance', 'VIGILANCE & AUDIT'),
+      },
+      {
+        id: 'duplicate-detection',
+        label: t('nav.duplicateDetection', 'Duplicate Detection'),
+        icon: Copy,
+        section: t('nav.sectionVigilance', 'VIGILANCE & AUDIT'),
+      },
+      {
+        id: 'cost-intelligence',
+        label: t('nav.costIntelligence', 'Cost Intelligence'),
+        icon: DollarSign,
+        section: t('nav.sectionVigilance', 'VIGILANCE & AUDIT'),
+      },
+      {
+        id: 'compliance-center',
+        label: t('nav.complianceCenter', 'Compliance Center'),
+        icon: FileCheck2,
+        section: t('nav.sectionVigilance', 'VIGILANCE & AUDIT'),
+      },
+      {
+        id: 'inspection-workbench',
+        label: t('nav.inspectionWorkbench', 'Inspection Workbench'),
+        icon: ClipboardList,
+        section: t('nav.sectionField', 'FIELD & CITIZEN'),
+      },
+      {
+        id: 'citizen-portal',
+        label: t('nav.citizenPortal', 'Citizen Vigilance'),
+        icon: Users,
+        section: t('nav.sectionField', 'FIELD & CITIZEN'),
+      },
+      {
+        id: 'dashboard',
+        label: t('nav.anomalyDashboard', 'Anomaly Dashboard'),
+        icon: LayoutDashboard,
+        section: t('nav.sectionRegistries', 'CORE REGISTRIES'),
+      },
+      {
+        id: 'projects',
+        label: t('nav.projects', 'Projects Registry'),
+        icon: FolderGit2,
+        badge: totalProjectsCount,
+        section: t('nav.sectionRegistries', 'CORE REGISTRIES'),
+      },
+      {
+        id: 'contractors',
+        label: t('nav.contractors', 'Contractor Registry'),
+        icon: Building,
+        section: t('nav.sectionRegistries', 'CORE REGISTRIES'),
+      },
+      {
+        id: 'map',
+        label: t('nav.gisMap', 'Geospatial Map'),
+        icon: MapPin,
+        section: t('nav.sectionRegistries', 'CORE REGISTRIES'),
+      },
+      {
+        id: 'admin-users',
+        label: t('nav.adminUsers', 'User Accounts'),
+        icon: Users,
+        section: t('nav.sectionAdmin', 'ADMINISTRATION'),
+      },
+      {
+        id: 'assistant-settings',
+        label: t('nav.settings', 'Settings'),
+        icon: Sparkles,
+      },
+    ];
+
+    if (!user) {
+      items.push({
+        id: 'login',
+        label: t('header.officerSignIn', 'Officer Sign In'),
+        icon: Lock,
+      });
+    }
+
+    return items;
+  }, [t, totalProjectsCount, user]);
 
   const userRole = user?.role || null;
   const isViewerOnly = isCitizenOrViewer(userRole);
@@ -358,6 +365,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-3 border-t border-slate-200">
         {!isCollapsed ? (
           <div className="space-y-2">
+            {/* Language Selector in Sidebar */}
+            <div className="pb-1">
+              <LanguageSelector variant="sidebar" />
+            </div>
+
             {user ? (
               <div className="p-2.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2 text-xs">
                 <div className="flex items-center justify-between">
@@ -378,7 +390,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <button
                       onClick={onSignOut}
                       className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                      title="Sign Out"
+                      title={t('header.signOut', 'Sign Out')}
                     >
                       <LogOut className="w-3.5 h-3.5" />
                     </button>
@@ -408,7 +420,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className="w-full py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
               >
                 <Lock className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Officer Sign In</span>
+                <span>{t('header.officerSignIn', 'Officer Sign In')}</span>
               </button>
             )}
 
@@ -418,11 +430,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2 py-1 text-slate-400">
+            <LanguageSelector variant="compact" />
             {user && onSignOut ? (
               <button
                 onClick={onSignOut}
                 className="p-1.5 rounded-xl hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-                title="Sign Out"
+                title={t('header.signOut', 'Sign Out')}
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -430,7 +443,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 onClick={() => onSelectTab('login')}
                 className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-cyan-600 transition-colors cursor-pointer"
-                title="Sign In"
+                title={t('header.officerSignIn', 'Officer Sign In')}
               >
                 <Lock className="w-4 h-4 text-cyan-600" />
               </button>

@@ -39,6 +39,8 @@ import { CitizenPortalView } from './components/views/CitizenPortalView';
 import { MinistryBriefingView } from './components/views/MinistryBriefingView';
 import { AiAssistantView } from './components/views/AiAssistantView';
 import { AdminUsersView } from './components/views/AdminUsersView';
+import { useTranslation } from './i18n/LanguageContext';
+import { LanguageSelector } from './components/shared/LanguageSelector';
 
 // Firebase (for live persistence if available, with immediate local fallback)
 import { db, handleFirestoreError, OperationType } from './firebase';
@@ -54,6 +56,7 @@ import {
 } from 'lucide-react';
 
 export function App() {
+  const { t } = useTranslation();
   // Navigation State (Landing, Dashboard, Projects, Contractors, Map, Settings, Login)
   const [activeTab, setActiveTab] = useState<ActiveTab>('landing');
   const [loginInitialMode, setLoginInitialMode] = useState<'signin' | 'signup'>('signin');
@@ -343,32 +346,35 @@ export function App() {
           <div className="flex items-center gap-3 overflow-hidden">
             <div>
               <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                MPLADS-VigilAI • Project Risk Monitoring
+                {t('header.tagline', 'MPLADS-VigilAI • Project Risk Monitoring')}
               </div>
               <h1 className="text-sm sm:text-base font-black text-slate-900 truncate">
-                {activeTab === 'national-command' && 'National Command Center'}
-                {activeTab === 'ai-copilot' && 'AI Grounded Vigilance Copilot'}
-                {activeTab === 'decision-center' && 'Decision Center & Case Authorization'}
-                {activeTab === 'executive-briefing' && 'Executive Vigilance Briefing'}
-                {activeTab === 'risk-forecast' && 'Predictive Risk Forecasting'}
-                {activeTab === 'audit-prioritization' && 'Audit Prioritization Engine'}
-                {activeTab === 'duplicate-detection' && 'Duplicate Work & Asset Detection'}
-                {activeTab === 'cost-intelligence' && 'Cost Intelligence & SoR Benchmarks'}
-                {activeTab === 'compliance-center' && 'Statutory Compliance Center'}
-                {activeTab === 'inspection-workbench' && 'On-Site Inspection Workbench'}
-                {activeTab === 'citizen-portal' && 'Citizen Social Audit & Verification'}
-                {activeTab === 'dashboard' && 'Risk Dashboard'}
-                {activeTab === 'projects' && 'Projects Master Registry'}
-                {activeTab === 'contractors' && 'Contractor Performance & Registry'}
-                {activeTab === 'map' && 'Geospatial Project Map'}
-                {activeTab === 'assistant-settings' && 'Platform Settings'}
-                {activeTab === 'admin-users' && 'User Accounts & Access Control'}
+                {activeTab === 'national-command' && t('nav.commandCenter', 'National Command Center')}
+                {activeTab === 'ai-copilot' && t('nav.aiCopilot', 'AI Grounded Vigilance Copilot')}
+                {activeTab === 'decision-center' && t('nav.decisionCenter', 'Decision Center & Case Authorization')}
+                {activeTab === 'executive-briefing' && t('nav.executiveBriefing', 'Executive Vigilance Briefing')}
+                {activeTab === 'risk-forecast' && t('nav.riskForecast', 'Predictive Risk Forecasting')}
+                {activeTab === 'audit-prioritization' && t('nav.auditPrioritization', 'Audit Prioritization Engine')}
+                {activeTab === 'duplicate-detection' && t('nav.duplicateDetection', 'Duplicate Work & Asset Detection')}
+                {activeTab === 'cost-intelligence' && t('nav.costIntelligence', 'Cost Intelligence & SoR Benchmarks')}
+                {activeTab === 'compliance-center' && t('nav.complianceCenter', 'Statutory Compliance Center')}
+                {activeTab === 'inspection-workbench' && t('nav.inspectionWorkbench', 'On-Site Inspection Workbench')}
+                {activeTab === 'citizen-portal' && t('nav.citizenPortal', 'Citizen Social Audit & Verification')}
+                {activeTab === 'dashboard' && t('nav.dashboard', 'Risk Dashboard')}
+                {activeTab === 'projects' && t('nav.projects', 'Projects Master Registry')}
+                {activeTab === 'contractors' && t('nav.contractors', 'Contractor Performance & Registry')}
+                {activeTab === 'map' && t('nav.gisMap', 'Geospatial Project Map')}
+                {activeTab === 'assistant-settings' && t('nav.settings', 'Platform Settings')}
+                {activeTab === 'admin-users' && t('nav.adminUsers', 'User Accounts & Access Control')}
               </h1>
             </div>
           </div>
 
           {/* Quick Header Actions */}
           <div className="flex items-center gap-2.5 shrink-0">
+            {/* Global Language Selector */}
+            <LanguageSelector variant="header" />
+
             {/* User Profile Badge or Sign In Button */}
             {currentUser ? (
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200/80 text-xs">
@@ -386,7 +392,7 @@ export function App() {
                 <button
                   onClick={handleSignOut}
                   className="ml-1 text-slate-400 hover:text-rose-600 cursor-pointer transition-colors p-1"
-                  title="Sign Out"
+                  title={t('header.signOut', 'Sign Out')}
                 >
                   <LogOut className="w-3.5 h-3.5" />
                 </button>
@@ -396,10 +402,10 @@ export function App() {
                 id="header-signin-btn"
                 onClick={() => setActiveTab('login')}
                 className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
-                title="Officer Login"
+                title={t('header.officerSignIn', 'Officer Sign In')}
               >
                 <Lock className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Officer Sign In</span>
+                <span>{t('header.officerSignIn', 'Officer Sign In')}</span>
               </button>
             )}
 
@@ -408,10 +414,10 @@ export function App() {
               id="header-overview-btn"
               onClick={() => setActiveTab('landing')}
               className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-              title="Return to Platform Overview"
+              title={t('header.overviewBtn', 'Return to Platform Overview')}
             >
               <Globe className="w-3.5 h-3.5 text-indigo-600" />
-              <span>Overview</span>
+              <span>{t('header.overviewBtn', 'Overview')}</span>
             </button>
 
             {/* Quick Link to Projects */}
@@ -422,7 +428,9 @@ export function App() {
                 className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
               >
                 <FolderGit2 className="w-3.5 h-3.5" />
-                <span>Projects ({scoredProjects.length})</span>
+                <span>
+                  {t('header.projectsBtn', 'Projects')} ({scoredProjects.length})
+                </span>
               </button>
             )}
           </div>

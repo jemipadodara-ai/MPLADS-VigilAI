@@ -15,6 +15,8 @@ import {
   Activity,
   ArrowDown,
 } from 'lucide-react';
+import { useTranslation } from '../../i18n/LanguageContext';
+import { LanguageSelector } from '../shared/LanguageSelector';
 
 interface LandingPageProps {
   onEnterPortal: () => void;
@@ -37,6 +39,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   user,
   onSignOut,
 }) => {
+  const { t } = useTranslation();
   const handleGoToProjects = onExploreProjects || onEnterPortal;
 
   return (
@@ -54,13 +57,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 MPLADS <span className="text-indigo-600">VigilAI</span>
               </span>
               <p className="text-[11px] text-slate-500 font-medium hidden sm:block leading-none">
-                Government Project Risk Monitoring
+                {t('app.subtitle', 'Government Project Risk Monitoring')}
               </p>
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="flex items-center gap-2.5">
+          {/* Quick Actions & Language Selector */}
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            {/* Global Language Selector */}
+            <LanguageSelector variant="header" />
+
             {user ? (
               <div className="flex items-center gap-2">
                 <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs">
@@ -72,16 +78,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   onClick={onEnterPortal}
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold shadow-xs transition-all cursor-pointer"
                 >
-                  <span>Risk Dashboard</span>
+                  <span>{t('landing.enterPortal', 'Risk Dashboard')}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
                 {onSignOut && (
                   <button
                     onClick={onSignOut}
                     className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition-colors text-xs font-semibold cursor-pointer"
-                    title="Sign Out"
+                    title={t('header.signOut', 'Sign Out')}
                   >
-                    Sign Out
+                    {t('header.signOut', 'Sign Out')}
                   </button>
                 )}
               </div>
@@ -93,7 +99,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     onClick={onNavigateToRegister}
                     className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs sm:text-sm font-bold transition-all cursor-pointer"
                   >
-                    <span>Create Account</span>
+                    <span>{t('header.createAccount', 'Create Account')}</span>
                   </button>
                 )}
 
@@ -103,7 +109,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     onClick={onNavigateToLogin}
                     className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold transition-all cursor-pointer"
                   >
-                    <span>Sign In</span>
+                    <span>{t('header.officerSignIn', 'Sign In')}</span>
                   </button>
                 )}
 
@@ -111,7 +117,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   onClick={handleGoToProjects}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold shadow-xs transition-all cursor-pointer"
                 >
-                  <span>Explore Projects</span>
+                  <span>{t('landing.exploreWorks', 'Explore Projects')}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </>
@@ -131,16 +137,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           ) : (
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold tracking-wide uppercase shadow-2xs">
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Government Project Risk Monitoring</span>
+              <span>{t('app.subtitle', 'Government Project Risk Monitoring')}</span>
             </div>
           )}
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.15]">
-            MPLADS-VigilAI
+            {t('landing.title', 'MPLADS-VigilAI')}
           </h1>
 
           <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed font-normal">
-            Find government projects that may need attention and understand the reasons behind each risk.
+            {t('landing.subtitle', 'Find government projects that may need attention and understand the reasons behind each risk.')}
           </p>
 
           {/* Primary Actions */}
@@ -152,7 +158,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   onClick={onEnterPortal}
                   className="inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-base font-bold shadow-md shadow-indigo-600/20 hover:shadow-indigo-600/30 transition-all cursor-pointer group"
                 >
-                  <span>Launch Risk Dashboard</span>
+                  <span>{t('landing.enterPortal', 'Launch Risk Dashboard')}</span>
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
                 <button
@@ -160,7 +166,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   onClick={handleGoToProjects}
                   className="inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-base font-bold transition-all shadow-xs cursor-pointer"
                 >
-                  <span>Browse All Projects</span>
+                  <span>{t('landing.exploreWorks', 'Browse All Projects')}</span>
                 </button>
               </>
             ) : (
@@ -170,7 +176,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   onClick={handleGoToProjects}
                   className="inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-base font-bold shadow-md shadow-indigo-600/20 hover:shadow-indigo-600/30 transition-all cursor-pointer group"
                 >
-                  <span>Explore Projects</span>
+                  <span>{t('landing.exploreWorks', 'Explore Projects')}</span>
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
 
@@ -180,7 +186,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     onClick={onNavigateToRegister}
                     className="inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-base font-bold transition-all shadow-xs cursor-pointer"
                   >
-                    <span>Create Account</span>
+                    <span>{t('header.createAccount', 'Create Account')}</span>
                   </button>
                 )}
 
@@ -190,7 +196,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     onClick={onNavigateToLogin}
                     className="inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-base font-bold transition-all shadow-xs cursor-pointer"
                   >
-                    <span>Officer Sign In</span>
+                    <span>{t('header.officerSignIn', 'Officer Sign In')}</span>
                   </button>
                 )}
               </>

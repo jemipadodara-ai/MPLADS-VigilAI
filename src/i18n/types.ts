@@ -1,0 +1,158 @@
+export type LanguageCode = 'en' | 'hi' | 'gu' | 'mr' | 'bn' | 'pa';
+
+export interface LanguageInfo {
+  code: LanguageCode;
+  name: string;
+  nativeName: string;
+  flag: string;
+}
+
+export interface TranslationDictionary {
+  nav: {
+    overview: string;
+    commandCenter: string;
+    decisionCenter: string;
+    aiCopilot: string;
+    riskForecast: string;
+    auditPrioritization: string;
+    duplicateDetection: string;
+    costIntelligence: string;
+    complianceCenter: string;
+    inspectionWorkbench: string;
+    citizenPortal: string;
+    executiveBriefing: string;
+    dashboard: string;
+    projects: string;
+    contractors: string;
+    gisMap: string;
+    settings: string;
+    adminUsers: string;
+    collapse: string;
+    expand: string;
+    sectionDecision: string;
+    sectionVigilance: string;
+    sectionRegisters: string;
+    sectionSystem: string;
+  };
+  header: {
+    tagline: string;
+    officerSignIn: string;
+    signOut: string;
+    overviewBtn: string;
+    projectsBtn: string;
+    language: string;
+  };
+  common: {
+    loading: string;
+    search: string;
+    filter: string;
+    reset: string;
+    apply: string;
+    export: string;
+    close: string;
+    back: string;
+    viewDetails: string;
+    totalProjects: string;
+    totalAmount: string;
+    expenditure: string;
+    utilization: string;
+    riskScore: string;
+    status: string;
+    action: string;
+    critical: string;
+    high: string;
+    medium: string;
+    low: string;
+    lakhs: string;
+    crores: string;
+  };
+  decision: {
+    title: string;
+    subtitle: string;
+    freezePayment: string;
+    assignInspection: string;
+    generateNotice: string;
+    resolveCase: string;
+    explainableRiskDecomp: string;
+    additiveSum: string;
+    financialAnomaly: string;
+    progressMismatch: string;
+    milestoneDelay: string;
+    contractorRisk: string;
+    duplicateProbability: string;
+    dataQuality: string;
+    executiveDirectiveActive: string;
+    paymentFrozen: string;
+    inspectionAssigned: string;
+    noticeIssued: string;
+    caseResolved: string;
+    ministerQuickMode: string;
+    ministerQuickDesc: string;
+    examine5Q: string;
+    hide5Q: string;
+    fullDossier: string;
+  };
+  fiveQ: {
+    frameworkTitle: string;
+    q1: string;
+    q2: string;
+    q3: string;
+    q4: string;
+    q5: string;
+    evidenceAtStake: string;
+    actionRequired: string;
+  };
+  map: {
+    gisTitle: string;
+    gisSubtitle: string;
+    mappedWorks: string;
+    spatialHotspots: string;
+    basemap: string;
+    satellite: string;
+    satelliteHybrid: string;
+    streets: string;
+    satelliteDesc: string;
+    hybridDesc: string;
+    streetsDesc: string;
+    zoom: string;
+    zoomIn: string;
+    zoomOut: string;
+    resetIndia: string;
+    fitBounds: string;
+    allStates: string;
+    allDistricts: string;
+    allSectors: string;
+    allStatuses: string;
+    riskIndicators: string;
+    exactGps: string;
+    districtApprox: string;
+    stateSummary: string;
+  };
+  landing: {
+    title: string;
+    subtitle: string;
+    enterPortal: string;
+    exploreWorks: string;
+    statutoryOversight: string;
+    activeDockets: string;
+    verifiedProjects: string;
+    transparencyNote: string;
+  };
+  projects: {
+    registryTitle: string;
+    addProject: string;
+    workCode: string;
+    projectTitle: string;
+    constituency: string;
+    district: string;
+    state: string;
+    contractor: string;
+    agency: string;
+    sanctioned: string;
+    spent: string;
+    progress: string;
+    fullDossier: string;
+    searchPlaceholder: string;
+  };
+}
+

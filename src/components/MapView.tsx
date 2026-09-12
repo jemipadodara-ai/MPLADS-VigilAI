@@ -4,6 +4,7 @@ import Supercluster from 'supercluster';
 import { MPLADProject, RiskLevel } from '../types';
 import { RiskBadge } from './RiskBadge';
 import { getProjectCoordinates, ProjectLocationResult } from '../utils/geoCoordinates';
+import { useTranslation } from '../i18n/LanguageContext';
 import {
   Search,
   RotateCcw,
@@ -18,6 +19,8 @@ import {
   X,
   Eye,
   Info,
+  Maximize2,
+  Globe,
 } from 'lucide-react';
 
 interface MapViewProps {
@@ -46,11 +49,19 @@ const INDIA_CENTER: [number, number] = [22.8, 79.2];
 const DEFAULT_ZOOM = 4.7;
 
 export const MapView: React.FC<MapViewProps> = ({ projects, onSelectProject }) => {
+  const { t } = useTranslation();
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const geoJsonLayerRef = useRef<L.GeoJSON | null>(null);
   const clusterIndexRef = useRef<Supercluster | null>(null);
+
+  // Basemap & Zoom States
+  const [basemapMode, setBasemapMode] = useState<'hybrid' | 'satellite' | 'street'>('hybrid');
+  const [currentZoom, setCurrentZoom] = useState<number>(5);
+  const satelliteLayerRef = useRef<L.TileLayer | null>(null);
+  const hybridLabelsLayerRef = useRef<L.TileLayer | null>(null);
+  const streetLayerRef = useRef<L.TileLayer | null>(null);
 
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -253,26 +264,59 @@ export const MapView: React.FC<MapViewProps> = ({ projects, onSelectProject }) =
     };
   }, []);
 
-  // 3. Initialize Leaflet Map Instance
+  // 3. Initialize Leaflet Map Instance with Satellite Basemap Support
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
     try {
-      // Create map instance
+      // Create map instance with smooth scroll, touch and wheel zoom enabled
       const map = L.map(mapContainerRef.current, {
         center: INDIA_CENTER,
         zoom: DEFAULT_ZOOM,
-        minZoom: 3.5,
-        maxZoom: 18,
-        zoomControl: false, // We'll add custom positioned zoom controls
+        minZoom: 3,
+        maxZoom: 19,
+        zoomControl: false,
+        scrollWheelZoom: true,
+        doubleClickZoom: true,
+        touchZoom: true,
+        boxZoom: true,
         attributionControl: false,
       });
 
-      // Standard OpenStreetMap raster tiles - free, public, no API key required
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors',
-      }).addTo(map);
+      // 1. Esri World Imagery (High-Resolution Photographic Satellite Basemap)
+      const satelliteLayer = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        {
+          maxZoom: 19,
+          attribution: 'Imagery &copy; Esri, Maxar, Earthstar Geographics',
+        }
+      );
+      satelliteLayerRef.current = satelliteLayer;
+
+      // 2. Esri World Boundaries and Places Reference (Roads, Cities, State & District Labels)
+      const hybridLabelsLayer = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+        {
+          maxZoom: 19,
+          pane: 'overlayPane',
+          attribution: 'Labels &copy; Esri',
+        }
+      );
+      hybridLabelsLayerRef.current = hybridLabelsLayer;
+
+      // 3. OpenStreetMap Streets Layer (Cartographic fallback)
+      const streetLayer = L.tileLayer(
+        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        {
+          maxZoom: 19,
+          attribution: '&copy; OpenStreetMap contributors',
+        }
+      );
+      streetLayerRef.current = streetLayer;
+
+      // Default Basemap: High-Resolution Satellite + Geographic Reference Labels (Hybrid)
+      satelliteLayer.addTo(map);
+      hybridLabelsLayer.addTo(map);
 
       // Attribution control in subtle bottom right
       L.control
@@ -286,7 +330,13 @@ export const MapView: React.FC<MapViewProps> = ({ projects, onSelectProject }) =
       const markersLayerGroup = L.layerGroup().addTo(map);
       markersLayerGroupRef.current = markersLayerGroup;
 
+      // Track zoom level live
+      map.on('zoomend', () => {
+        setCurrentZoom(Math.round(map.getZoom()));
+      });
+
       mapInstanceRef.current = map;
+      setCurrentZoom(Math.round(map.getZoom()));
     } catch (err: any) {
       console.error('Leaflet initialization error:', err);
       setMapError(err?.message || 'Failed to initialize geographic map engine');
@@ -299,6 +349,29 @@ export const MapView: React.FC<MapViewProps> = ({ projects, onSelectProject }) =
       }
     };
   }, []);
+
+  // Synchronize Basemap Layer toggles (Hybrid / Satellite / Streets)
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const sat = satelliteLayerRef.current;
+    const labels = hybridLabelsLayerRef.current;
+    const street = streetLayerRef.current;
+    if (!map || !sat || !labels || !street) return;
+
+    if (basemapMode === 'hybrid') {
+      if (!map.hasLayer(sat)) sat.addTo(map);
+      if (!map.hasLayer(labels)) labels.addTo(map);
+      if (map.hasLayer(street)) map.removeLayer(street);
+    } else if (basemapMode === 'satellite') {
+      if (!map.hasLayer(sat)) sat.addTo(map);
+      if (map.hasLayer(labels)) map.removeLayer(labels);
+      if (map.hasLayer(street)) map.removeLayer(street);
+    } else if (basemapMode === 'street') {
+      if (!map.hasLayer(street)) street.addTo(map);
+      if (map.hasLayer(sat)) map.removeLayer(sat);
+      if (map.hasLayer(labels)) map.removeLayer(labels);
+    }
+  }, [basemapMode]);
 
   // Handle ResizeObserver so the map redraws when sidebar collapses or expands
   useEffect(() => {
@@ -667,6 +740,20 @@ export const MapView: React.FC<MapViewProps> = ({ projects, onSelectProject }) =
     setActiveProject(null);
   };
 
+  // Zoom to fit all filtered projects
+  const handleFitBounds = () => {
+    const map = mapInstanceRef.current;
+    if (!map || filteredMappedProjects.length === 0) return;
+    const latLngs = filteredMappedProjects.map((p) => [
+      p.location.latitude!,
+      p.location.longitude!,
+    ]);
+    const bounds = L.latLngBounds(latLngs as any);
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+    }
+  };
+
   // Zoom In / Out Handlers
   const handleZoomIn = () => {
     mapInstanceRef.current?.zoomIn();
@@ -686,46 +773,47 @@ export const MapView: React.FC<MapViewProps> = ({ projects, onSelectProject }) =
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
           {/* Title & Coverage Indicator */}
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-blue-600 text-white shadow-xs shrink-0">
+            <div className="p-2.5 rounded-2xl bg-indigo-600 text-white shadow-xs shrink-0">
               <MapPin className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-sm font-bold text-slate-900">
-                  Geographic Project Monitoring
+                  {t('map.gisTitle', 'Geographic Project Monitoring')}
                 </h3>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                  {locationStats.mapped} of {locationStats.total} Works Mapped
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  {locationStats.mapped} {t('map.mappedWorks', 'Works Mapped')}
                 </span>
                 {locationStats.districtCount > 0 && (
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
                     <Info className="w-3 h-3 text-amber-600" />
-                    <span>{locationStats.districtCount} Approx. District</span>
+                    <span>{locationStats.districtCount} {t('map.districtApprox', 'District Approx')}</span>
                   </span>
                 )}
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                Authentic geographic coordinates with automated district resolution & state boundaries
+                {t('map.gisSubtitle', 'High-resolution satellite imagery with automated district resolution & state boundaries')}
               </p>
             </div>
           </div>
 
-          {/* Search Field & Reset */}
+          {/* Controls: Search, Basemap Switcher, View Mode & Reset */}
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="relative flex-1 sm:w-72">
+            {/* Search Field */}
+            <div className="relative flex-1 sm:w-64">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 id="map-search-input"
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search district, constituency, village or project..."
-                className="w-full pl-9 pr-8 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-2xs"
+                placeholder={t('map.searchPlaceholder', 'Search district, village, project...')}
+                className="w-full pl-9 pr-8 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 shadow-2xs"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
                   title="Clear search"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -733,11 +821,54 @@ export const MapView: React.FC<MapViewProps> = ({ projects, onSelectProject }) =
               )}
             </div>
 
+            {/* Satellite / Basemap Switcher */}
+            <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setBasemapMode('hybrid')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  basemapMode === 'hybrid'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title={t('map.hybridDesc', 'Satellite imagery with roads, cities & administrative labels')}
+              >
+                <span>🌐</span>
+                <span>{t('map.satelliteHybrid', 'Hybrid')}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setBasemapMode('satellite')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  basemapMode === 'satellite'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title={t('map.satelliteDesc', 'High-resolution photographic earth imagery')}
+              >
+                <span>🛰️</span>
+                <span>{t('map.satellite', 'Satellite')}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setBasemapMode('street')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  basemapMode === 'street'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title={t('map.streetsDesc', 'Standard topographic street map')}
+              >
+                <span>🗺️</span>
+                <span>{t('map.streets', 'Street')}</span>
+              </button>
+            </div>
+
             {/* View Mode Toggle: Pins vs Risk Distribution */}
             <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-2xs">
               <button
                 onClick={() => setViewMode('pins')}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                   viewMode === 'pins'
                     ? 'bg-slate-900 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
@@ -745,11 +876,11 @@ export const MapView: React.FC<MapViewProps> = ({ projects, onSelectProject }) =
                 title="View project markers and clusters"
               >
                 <MapPin className="w-3.5 h-3.5" />
-                <span>Project Pins</span>
+                <span>{t('map.projectPins', 'Project Pins')}</span>
               </button>
               <button
                 onClick={() => setViewMode('risk-distribution')}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                   viewMode === 'risk-distribution'
                     ? 'bg-slate-900 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
@@ -757,15 +888,15 @@ export const MapView: React.FC<MapViewProps> = ({ projects, onSelectProject }) =
                 title="View state risk intensity choropleth"
               >
                 <Layers className="w-3.5 h-3.5" />
-                <span>Risk Distribution</span>
+                <span>{t('map.riskDistribution', 'Risk Distribution')}</span>
               </button>
             </div>
 
             <button
               id="map-reset-btn"
               onClick={handleResetView}
-              className="p-2 bg-white border border-slate-200 hover:bg-slate-100 rounded-xl text-slate-600 hover:text-slate-900 transition-colors shadow-2xs"
-              title="Reset view to India"
+              className="p-2 bg-white border border-slate-200 hover:bg-slate-100 rounded-xl text-slate-600 hover:text-slate-900 transition-colors shadow-2xs cursor-pointer"
+              title={t('map.resetIndia', 'Reset to India View')}
             >
               <RotateCcw className="w-4 h-4" />
             </button>
@@ -776,13 +907,19 @@ export const MapView: React.FC<MapViewProps> = ({ projects, onSelectProject }) =
         <div className="flex items-center justify-between gap-2 flex-wrap pt-2 border-t border-slate-200/70">
           {/* Risk Level Pills */}
           <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 shadow-2xs overflow-x-auto">
-            {['All', 'Critical', 'High', 'Medium', 'Low'].map((lvl) => {
+            {[
+              { id: 'All', label: t('gisMap.all', 'All') },
+              { id: 'Critical', label: t('gisMap.critical', 'Critical') },
+              { id: 'High', label: t('gisMap.high', 'High') },
+              { id: 'Medium', label: t('gisMap.medium', 'Medium') },
+              { id: 'Low', label: t('gisMap.low', 'Low') },
+            ].map(({ id: lvl, label }) => {
               const isSelected = selectedRisk === lvl;
               return (
                 <button
                   key={lvl}
                   onClick={() => setSelectedRisk(lvl)}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
                     isSelected
                       ? lvl === 'Critical'
                         ? 'bg-rose-600 text-white shadow-xs'
@@ -796,7 +933,7 @@ export const MapView: React.FC<MapViewProps> = ({ projects, onSelectProject }) =
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                   }`}
                 >
-                  {lvl}
+                  {label}
                 </button>
               );
             })}
@@ -811,9 +948,9 @@ export const MapView: React.FC<MapViewProps> = ({ projects, onSelectProject }) =
                 setSelectedState(e.target.value);
                 setSelectedDistrict('All');
               }}
-              className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-2xs"
+              className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-2xs"
             >
-              <option value="All">All States ({filterOptions.states.length})</option>
+              <option value="All">{t('map.allStates', 'All States')} ({filterOptions.states.length})</option>
               {filterOptions.states.map((s) => (
                 <option key={s} value={s}>
                   {s}
@@ -825,9 +962,9 @@ export const MapView: React.FC<MapViewProps> = ({ projects, onSelectProject }) =
             <select
               value={selectedDistrict}
               onChange={(e) => setSelectedDistrict(e.target.value)}
-              className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-2xs max-w-[160px] truncate"
+              className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-2xs max-w-[160px] truncate"
             >
-              <option value="All">All Districts</option>
+              <option value="All">{t('map.allDistricts', 'All Districts')}</option>
               {filterOptions.districts.map((d) => (
                 <option key={d} value={d}>
                   {d}
@@ -839,9 +976,9 @@ export const MapView: React.FC<MapViewProps> = ({ projects, onSelectProject }) =
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-2xs max-w-[160px] truncate hidden md:block"
+              className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-2xs max-w-[160px] truncate hidden md:block"
             >
-              <option value="All">All Sectors</option>
+              <option value="All">{t('map.allSectors', 'All Sectors')}</option>
               {filterOptions.categories.map((c) => (
                 <option key={c} value={c}>
                   {c}
@@ -853,9 +990,9 @@ export const MapView: React.FC<MapViewProps> = ({ projects, onSelectProject }) =
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-2xs max-w-[160px] truncate hidden lg:block"
+              className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-2xs max-w-[160px] truncate hidden lg:block"
             >
-              <option value="All">All Statuses</option>
+              <option value="All">{t('map.allStatuses', 'All Statuses')}</option>
               {filterOptions.statuses.map((st) => (
                 <option key={st} value={st}>
                   {st}
@@ -906,36 +1043,80 @@ export const MapView: React.FC<MapViewProps> = ({ projects, onSelectProject }) =
           </div>
         )}
 
-        {/* Zoom Controls */}
-        <div className="absolute bottom-6 right-6 flex flex-col gap-1.5 bg-white/95 backdrop-blur-sm p-1 rounded-xl border border-slate-200 shadow-lg z-30">
+        {/* Top-Left Satellite Basemap Status Pill */}
+        <div className="absolute top-4 left-4 bg-slate-950/80 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-xl shadow-xl text-white text-xs font-semibold flex items-center gap-2 z-30 pointer-events-none">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span>
+            {basemapMode === 'satellite'
+              ? '🛰️ ' + t('map.satellite', 'Satellite View')
+              : basemapMode === 'hybrid'
+              ? '🌐 ' + t('map.satelliteHybrid', 'Satellite Hybrid')
+              : '🗺️ ' + t('map.streets', 'Street Map')}
+          </span>
+          <span className="text-slate-400 font-mono text-[11px] border-l border-white/20 pl-2">
+            {currentZoom}x
+          </span>
+        </div>
+
+        {/* High-Precision Zoom & Spatial Controls (Bottom-Right) */}
+        <div className="absolute bottom-6 right-6 flex flex-col items-center gap-1.5 bg-slate-950/85 backdrop-blur-md p-1.5 rounded-2xl border border-white/20 shadow-2xl z-30 text-white">
+          {/* Zoom In (+) */}
           <button
+            type="button"
             onClick={handleZoomIn}
-            className="p-2 hover:bg-slate-100 rounded-lg text-slate-700 hover:text-slate-900 transition-colors"
-            title="Zoom in"
+            className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/25 flex items-center justify-center text-white transition-all cursor-pointer font-extrabold text-base"
+            title={t('map.zoomIn', 'Zoom In')}
+            aria-label="Zoom in"
           >
-            <span className="text-sm font-bold">+</span>
+            +
           </button>
+
+          {/* Live Zoom Scale Readout */}
+          <div className="py-0.5 px-1.5 text-[10px] font-mono font-bold text-indigo-300 text-center tracking-tight" title="Current Zoom Scale">
+            {currentZoom}x
+          </div>
+
+          {/* Zoom Out (−) */}
           <button
+            type="button"
             onClick={handleZoomOut}
-            className="p-2 hover:bg-slate-100 rounded-lg text-slate-700 hover:text-slate-900 transition-colors"
-            title="Zoom out"
+            className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/25 flex items-center justify-center text-white transition-all cursor-pointer font-extrabold text-base"
+            title={t('map.zoomOut', 'Zoom Out')}
+            aria-label="Zoom out"
           >
-            <span className="text-sm font-bold">−</span>
+            −
           </button>
+
+          <div className="w-full border-t border-white/15 my-0.5" />
+
+          {/* Fit All Projects */}
           <button
-            onClick={handleResetView}
-            className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-700 hover:text-slate-900 transition-colors text-[10px] font-bold text-center border-t border-slate-200/80"
-            title="Reset to India center"
+            type="button"
+            onClick={handleFitBounds}
+            className="w-8 h-8 rounded-xl bg-white/10 hover:bg-indigo-600 hover:text-white flex items-center justify-center text-slate-200 transition-all cursor-pointer"
+            title={t('map.fitBounds', 'Fit All Works')}
+            aria-label="Fit all projects"
           >
-            <Crosshair className="w-3.5 h-3.5 mx-auto" />
+            <Maximize2 className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Reset to India Center */}
+          <button
+            type="button"
+            onClick={handleResetView}
+            className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/25 flex items-center justify-center text-slate-200 transition-all cursor-pointer"
+            title={t('map.resetIndia', 'Reset to India View')}
+            aria-label="Reset to India view"
+          >
+            <Crosshair className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {/* Color Legend (Government Style) */}
-        <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-sm border border-slate-200 p-3 rounded-2xl shadow-lg text-slate-800 text-[11px] space-y-1.5 z-30 hidden sm:block max-w-xs">
-          <div className="font-bold text-slate-900 flex items-center justify-between">
-            <span>Risk Indicators</span>
-            <span className="text-[10px] text-slate-500 font-normal">Score (0–100)</span>
+        {/* Color Legend (Government Style with Satellite-Friendly Contrast) */}
+        <div className="absolute bottom-6 left-6 bg-slate-950/85 backdrop-blur-md border border-white/20 p-3 rounded-2xl shadow-2xl text-slate-100 text-[11px] space-y-1.5 z-30 hidden sm:block max-w-xs">
+          <div className="font-bold text-white flex items-center justify-between">
+            <span>{t('map.riskIndicators', 'Risk Indicators')}</span>
+            <span className="text-[10px] text-slate-400 font-normal">Score (0–100)</span>
           </div>
           <div className="grid grid-cols-2 gap-x-3 gap-y-1 pt-1">
             <div className="flex items-center gap-2">
@@ -955,30 +1136,30 @@ export const MapView: React.FC<MapViewProps> = ({ projects, onSelectProject }) =
               <span>Low (0–30)</span>
             </div>
           </div>
-          <div className="pt-2 border-t border-slate-100 flex items-center gap-3 text-[10px] text-slate-500">
+          <div className="pt-2 border-t border-white/15 flex items-center gap-3 text-[10px] text-slate-300">
             <div className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full border-2 border-slate-600 bg-white" />
-              <span>Exact GPS</span>
+              <span className="w-2.5 h-2.5 rounded-full border-2 border-white bg-slate-800" />
+              <span>{t('map.exactGps', 'Exact GPS')}</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full border-2 border-dashed border-slate-600 bg-white" />
-              <span>District Approx</span>
+              <span className="w-2.5 h-2.5 rounded-full border-2 border-dashed border-white bg-slate-800" />
+              <span>{t('map.districtApprox', 'District Approx')}</span>
             </div>
           </div>
         </div>
 
-        {/* Hovered State Statistics Overlay (Requirement 10) */}
+        {/* Hovered State Statistics Overlay */}
         {hoveredStateSummary && (
           <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-xl p-3.5 z-30 max-w-xs w-full animate-in fade-in slide-in-from-top-2">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
               <div>
-                <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">
-                  State Vigilance Summary
+                <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider">
+                  {t('map.stateSummary', 'State Vigilance Summary')}
                 </span>
                 <h4 className="text-sm font-bold text-slate-900">{hoveredStateSummary.name}</h4>
               </div>
               <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                {hoveredStateSummary.totalProjects} Works
+                {hoveredStateSummary.totalProjects} {t('map.mappedWorks', 'Works')}
               </span>
             </div>
 
@@ -1000,34 +1181,34 @@ export const MapView: React.FC<MapViewProps> = ({ projects, onSelectProject }) =
             <div className="flex items-center justify-between text-[11px] pt-2 text-slate-600">
               <div className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-rose-600" />
-                <span>{hoveredStateSummary.criticalCount} Critical</span>
+                <span>{hoveredStateSummary.criticalCount} {t('gisMap.critical', 'Critical')}</span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-orange-500" />
-                <span>{hoveredStateSummary.highCount} High</span>
+                <span>{hoveredStateSummary.highCount} {t('gisMap.high', 'High')}</span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-emerald-600" />
-                <span>{hoveredStateSummary.lowCount} Low</span>
+                <span>{hoveredStateSummary.lowCount} {t('gisMap.low', 'Low')}</span>
               </div>
             </div>
           </div>
         )}
 
-        {/* Selected Project Clean Information Popup (Requirement 6) */}
+        {/* Selected Project Information Drawer */}
         {activeProject && (
-          <div className="absolute top-4 right-4 max-w-sm w-full bg-white rounded-2xl border border-slate-200/90 shadow-2xl p-4 z-40 space-y-3 animate-in fade-in slide-in-from-top-2">
+          <div className="absolute top-4 right-4 max-w-sm w-full bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-2xl p-4 z-40 space-y-3 animate-in fade-in slide-in-from-top-2">
             <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2">
               <div>
-                <div className="flex items-center gap-2 font-mono text-[11px] font-bold text-blue-700">
+                <div className="flex items-center gap-2 font-mono text-[11px] font-bold text-indigo-700">
                   <span>{activeProject.workCode || activeProject.id}</span>
                   {getProjectCoordinates(activeProject).accuracy === 'exact' ? (
                     <span className="px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-sans text-[9px] font-semibold flex items-center gap-0.5">
-                      <CheckCircle2 className="w-2.5 h-2.5" /> Exact GPS
+                      <CheckCircle2 className="w-2.5 h-2.5" /> {t('map.exactGps', 'Exact GPS')}
                     </span>
                   ) : (
                     <span className="px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200 font-sans text-[9px] font-semibold flex items-center gap-0.5">
-                      <Info className="w-2.5 h-2.5" /> Approx District
+                      <Info className="w-2.5 h-2.5" /> {t('map.districtApprox', 'Approx District')}
                     </span>
                   )}
                 </div>
@@ -1043,7 +1224,7 @@ export const MapView: React.FC<MapViewProps> = ({ projects, onSelectProject }) =
               </div>
               <button
                 onClick={() => setActiveProject(null)}
-                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
                 aria-label="Close project details"
               >
                 <X className="w-4 h-4" />
@@ -1053,7 +1234,7 @@ export const MapView: React.FC<MapViewProps> = ({ projects, onSelectProject }) =
             {/* Financials & Progress */}
             <div className="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs">
               <div>
-                <div className="text-[10px] text-slate-500 font-semibold uppercase">Amount</div>
+                <div className="text-[10px] text-slate-500 font-semibold uppercase">{t('common.sanctioned', 'Amount')}</div>
                 <div className="text-xs font-bold text-slate-900 mt-0.5">
                   ₹{Number(activeProject.sanctionedAmountLakhs || 0).toFixed(1)} Lakhs
                 </div>
@@ -1062,12 +1243,12 @@ export const MapView: React.FC<MapViewProps> = ({ projects, onSelectProject }) =
                 </div>
               </div>
               <div>
-                <div className="text-[10px] text-slate-500 font-semibold uppercase">Completion</div>
+                <div className="text-[10px] text-slate-500 font-semibold uppercase">{t('common.progress', 'Completion')}</div>
                 <div className="text-xs font-bold text-slate-900 mt-0.5">
                   {activeProject.completionPercentage ?? 0}%
                 </div>
                 <div className="text-[10px] text-slate-500 truncate mt-0.5">
-                  Status: {activeProject.status}
+                  {t('common.status', 'Status')}: {activeProject.status}
                 </div>
               </div>
             </div>
@@ -1076,7 +1257,7 @@ export const MapView: React.FC<MapViewProps> = ({ projects, onSelectProject }) =
             <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center justify-between">
               <div>
                 <div className="text-[10px] text-slate-500 font-semibold uppercase">
-                  Vigilance Risk Score
+                  {t('common.riskScore', 'Vigilance Risk Score')}
                 </div>
                 <div className="text-base font-extrabold text-slate-900 mt-0.5">
                   {activeProject.overallRiskScore || activeProject.riskScore || 0}
@@ -1102,7 +1283,7 @@ export const MapView: React.FC<MapViewProps> = ({ projects, onSelectProject }) =
               }}
               className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
             >
-              <span>View Project Details</span>
+              <span>{t('common.viewDetails', 'View Project Details')}</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
             </button>
           </div>
