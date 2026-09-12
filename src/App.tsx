@@ -23,7 +23,6 @@ import { Dashboard } from './components/views/Dashboard';
 import { Projects } from './components/views/Projects';
 import { Contractors } from './components/views/Contractors';
 import { GeospatialMap } from './components/views/GeospatialMap';
-import { AssistantAndSettings } from './components/views/AssistantAndSettings';
 import { ProjectDetails } from './components/ProjectDetails';
 
 // New Decision Intelligence & Vigilance Views
@@ -178,8 +177,13 @@ export function App() {
   const handleLoginSuccess = useCallback((user: AuthenticatedUser) => {
     setCurrentUser(user);
     localStorage.setItem('vigilai_user_session', JSON.stringify(user));
-    if (user.role === 'inspector') {
+    const r = (user.role || '').toLowerCase();
+    if (r === 'inspector') {
       setActiveTab('inspector-dashboard');
+    } else if (r === 'minister' || r === 'admin') {
+      setActiveTab('national-command');
+    } else if (r === 'citizen') {
+      setActiveTab('citizen-portal');
     } else {
       setActiveTab('landing');
     }
@@ -334,15 +338,19 @@ export function App() {
       <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased">
         <LandingPage
           onEnterPortal={() => {
-            if (currentUser?.role === 'inspector') {
+            const r = (currentUser?.role || '').toLowerCase();
+            if (r === 'inspector') {
               setActiveTab('inspector-dashboard');
+            } else if (r === 'citizen') {
+              setActiveTab('citizen-portal');
             } else {
               setActiveTab('national-command');
             }
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           onExploreProjects={() => {
-            if (currentUser?.role === 'inspector') {
+            const r = (currentUser?.role || '').toLowerCase();
+            if (r === 'inspector') {
               setActiveTab('inspector-project');
             } else {
               setActiveTab('projects');
@@ -437,7 +445,7 @@ export function App() {
               </div>
               <h1 className="text-sm sm:text-base font-black text-slate-900 truncate">
                 {activeTab === 'national-command' && t('nav.commandCenter', 'National Command Center')}
-                {activeTab === 'ai-copilot' && t('nav.aiCopilot', 'AI Grounded Vigilance Copilot')}
+                {activeTab === 'ai-copilot' && t('nav.aiChatbot', 'AI Vigilance Chatbot')}
                 {activeTab === 'decision-center' && t('nav.decisionCenter', 'Decision Center & Case Authorization')}
                 {activeTab === 'executive-briefing' && t('nav.executiveBriefing', 'Executive Vigilance Briefing')}
                 {activeTab === 'risk-forecast' && t('nav.riskForecast', 'Predictive Risk Forecasting')}
@@ -451,7 +459,6 @@ export function App() {
                 {activeTab === 'projects' && t('nav.projects', 'Projects Master Registry')}
                 {activeTab === 'contractors' && t('nav.contractors', 'Contractor Performance & Registry')}
                 {activeTab === 'map' && t('nav.gisMap', 'Geospatial Project Map')}
-                {activeTab === 'assistant-settings' && t('nav.settings', 'Platform Settings')}
                 {activeTab === 'admin-users' && t('nav.adminUsers', 'User Accounts & Access Control')}
                 {activeTab === 'inspector-dashboard' && t('nav.inspectorDashboard', 'Field Inspection Dashboard')}
                 {activeTab === 'inspector-project' && t('nav.myAssignments', 'Field Inspection Mission')}
@@ -694,20 +701,6 @@ export function App() {
             <GeospatialMap
               projects={scoredProjects}
               onInspectProject={(p) => setSelectedProject(p)}
-            />
-          )}
-
-          {/* Tab: Settings */}
-          {activeTab === 'assistant-settings' && (
-            <AssistantAndSettings
-              projects={scoredProjects}
-              currentUser={currentUser}
-              onSelectProjectByWorkCode={(code) => {
-                const found = scoredProjects.find(
-                  (p) => p.workCode === code || p.id === code
-                );
-                if (found) setSelectedProject(found);
-              }}
             />
           )}
 

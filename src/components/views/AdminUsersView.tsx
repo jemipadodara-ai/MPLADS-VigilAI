@@ -7,17 +7,11 @@ interface AdminUsersViewProps {
 
 const ROLE_COLORS: Record<string, string> = {
   minister: 'bg-red-100 text-red-700 border-red-200',
-  admin: 'bg-red-100 text-red-700 border-red-200',
-  district: 'bg-blue-100 text-blue-700 border-blue-200',
-  nodal_officer: 'bg-blue-100 text-blue-700 border-blue-200',
-  mp: 'bg-indigo-100 text-indigo-700 border-indigo-200',
-  analyst: 'bg-violet-100 text-violet-700 border-violet-200',
-  state_nodal: 'bg-cyan-100 text-cyan-700 border-cyan-200',
+  inspector: 'bg-indigo-100 text-indigo-700 border-indigo-200',
   citizen: 'bg-slate-100 text-slate-600 border-slate-200',
-  viewer: 'bg-slate-100 text-slate-600 border-slate-200',
 };
 
-const ALL_ROLES = ['admin', 'minister', 'district', 'nodal_officer', 'mp', 'analyst', 'state_nodal', 'citizen', 'viewer'];
+const ALL_ROLES = ['minister', 'inspector', 'citizen'];
 
 export const AdminUsersView: React.FC<AdminUsersViewProps> = ({ currentUser }) => {
   const [users, setUsers] = useState<any[]>([]);

@@ -52,33 +52,99 @@ interface ChatMessage {
   actionConfirmed?: boolean;
 }
 
+function formatKeyName(key: string): string {
+  return key
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/[_-]/g, ' ')
+    .replace(/^\w/, (c) => c.toUpperCase())
+    .trim();
+}
+
+function formatParsedJsonToMarkdown(data: any): string {
+  if (Array.isArray(data)) {
+    return data
+      .map((item, idx) => {
+        if (typeof item === 'object' && item !== null) {
+          const title = item.title || item.workCode || item.name || item.projectName || `Record ${idx + 1}`;
+          const fields = Object.entries(item)
+            .filter(([k]) => !['title', 'workCode', 'name', 'projectName'].includes(k))
+            .map(([k, v]) => `  - **${formatKeyName(k)}**: ${typeof v === 'object' ? JSON.stringify(v) : v}`)
+            .join('\n');
+          return `**${idx + 1}. ${title}**\n${fields}`;
+        }
+        return `- ${item}`;
+      })
+      .join('\n\n');
+  } else if (typeof data === 'object' && data !== null) {
+    return Object.entries(data)
+      .map(([k, v]) => {
+        if (Array.isArray(v)) {
+          return `### ${formatKeyName(k)}\n` + v.map((item) => `- ${typeof item === 'object' ? JSON.stringify(item) : item}`).join('\n');
+        } else if (typeof v === 'object' && v !== null) {
+          return `### ${formatKeyName(k)}\n` + Object.entries(v).map(([subK, subV]) => `  - **${formatKeyName(subK)}**: ${subV}`).join('\n');
+        }
+        return `- **${formatKeyName(k)}**: ${v}`;
+      })
+      .join('\n\n');
+  }
+  return String(data);
+}
+
+function cleanTextResponse(raw: string): string {
+  if (!raw) return 'No response details received.';
+  let text = raw.trim();
+
+  // If wrapped in markdown json block
+  if (text.startsWith('```json') && text.endsWith('```')) {
+    text = text.slice(7, -3).trim();
+  } else if (text.startsWith('```') && text.endsWith('```')) {
+    text = text.slice(3, -3).trim();
+  }
+
+  // If text is raw JSON string or JSON array
+  if ((text.startsWith('{') && text.endsWith('}')) || (text.startsWith('[') && text.endsWith(']'))) {
+    try {
+      const parsed = JSON.parse(text);
+      return formatParsedJsonToMarkdown(parsed);
+    } catch {
+      // not JSON, keep as is
+    }
+  }
+
+  // In case there is an embedded JSON block in the middle of text
+  const jsonBlockRegex = /```json\s*([\s\S]*?)\s*```/g;
+  if (jsonBlockRegex.test(text)) {
+    text = text.replace(jsonBlockRegex, (_, jsonContent) => {
+      try {
+        const parsed = JSON.parse(jsonContent);
+        return formatParsedJsonToMarkdown(parsed);
+      } catch {
+        return jsonContent;
+      }
+    });
+  }
+
+  return text;
+}
+
 const ROLE_PROMPTS: Record<string, string[]> = {
-  ministry: [
-    'What are the 5 highest-risk projects nationally?',
+  minister: [
+    'What are the 5 highest-risk MPLADS projects nationally?',
     'Provide state-level fund utilization and delay overview for Uttar Pradesh',
     'Which contractors have excessive single-bid concentration?',
-    'Generate national risk brief for PAC review',
+    'Generate national risk brief and financial divergence summary for PAC review',
   ],
-  state: [
-    'Show districts in Uttar Pradesh with critical P0 projects',
-    'Which districts have overdue physical milestone verifications?',
-    'Summarize contractor cartel risk across eastern constituencies',
-  ],
-  district: [
-    'Show delayed projects in Varanasi requiring immediate site audit',
-    'Assign physical inspection for VAR-089 to SE Vigilance',
-    'What is the financial divergence in Work Code MPLADS/2023-24/UP/VAR-089?',
-    'Review contractor Apex InfraWorks tenders in this district',
-  ],
-  mp: [
-    'Summarize fund absorption and completed works in Varanasi constituency',
-    'What citizen complaints or social audits are logged in my constituency?',
-    'Which recommended projects have pending sanction delays?',
+  inspector: [
+    'Show pending site inspections assigned to me in Varanasi',
+    'What is the physical vs financial progress divergence in Work Code VAR-089?',
+    'Guide me through geo-tagged photo verification requirements for road works',
+    'Check contractor milestone history and quality flags for Apex InfraWorks',
   ],
   citizen: [
     'Show completed public works and citizen boards in Varanasi',
-    'How do I report a missing water tank or stalled community hall?',
-    'What is the expenditure on school laboratory upgrades in my ward?',
+    'How do I report an abandoned or delayed community hall project?',
+    'What is the expenditure and sanction for school laboratory upgrades in my ward?',
+    'Contact details of district nodal officers and emergency grievance helplines',
   ],
 };
 
@@ -88,16 +154,29 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
   currentUser,
 }) => {
   const { language } = useLanguage();
-  const userRole = (currentUser?.role || 'district').toLowerCase();
-  const [selectedRole, setSelectedRole] = useState<string>(userRole);
+  const rawRole = (currentUser?.role || 'minister').toLowerCase();
+  const initialRole = ['minister', 'inspector', 'citizen'].includes(rawRole)
+    ? rawRole
+    : 'minister';
+  const [selectedRole, setSelectedRole] = useState<string>(initialRole);
+
+  const getGreetingTitle = (r: string) => {
+    if (r === 'minister') return 'Honorable Minister';
+    if (r === 'inspector') return 'Field Inspector';
+    return 'Citizen';
+  };
+
+  const getRoleDisplayName = (r: string) => {
+    if (r === 'minister') return 'UNION MINISTER';
+    if (r === 'inspector') return 'FIELD INSPECTOR';
+    return 'CITIZEN';
+  };
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'msg-welcome',
       sender: 'assistant',
-      text: `Greetings Officer. I am **VigilAI Assistant**, grounded strictly in official MPLADS registry records, Scikit-Learn anomaly models, and MoSPI statutory guidelines.\n\nActive Role: **${(
-        selectedRole || 'DISTRICT'
-      ).toUpperCase()}** | Jurisdiction: **${currentUser?.district || 'Varanasi'}, ${currentUser?.state || 'Uttar Pradesh'}**.\n\nI can retrieve project ground metrics, evaluate multi-engine risk fusion scores, audit contractor concentration, and formulate formal inspection assignments upon your confirmation.`,
+      text: `Greetings ${getGreetingTitle(selectedRole)}. I am **VigilAI Chatbot**, your interactive AI assistant grounded strictly in official MPLADS registry records, anomaly models, and MoSPI statutory guidelines.\n\nActive Lens: **${getRoleDisplayName(selectedRole)}** | Jurisdiction: **${currentUser?.district || 'Varanasi'}, ${currentUser?.state || 'Uttar Pradesh'}**.\n\nI can answer questions regarding project progress, audit risk anomalies, contractor concentration, physical verification guidelines, and public grievances in clear, structured text.`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       source: 'grounded-engine',
     },
@@ -106,7 +185,7 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [confirmingActionId, setConfirmingActionId] = useState<string | null>(null);
 
-  const activeQuestions = ROLE_PROMPTS[selectedRole] || ROLE_PROMPTS.district;
+  const activeQuestions = ROLE_PROMPTS[selectedRole] || ROLE_PROMPTS.minister;
 
   const handleSend = async (queryText?: string) => {
     const textToSend = queryText || inputText;
@@ -147,9 +226,10 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
       });
 
       const data = await response.json();
-      const replyText =
+      const rawText =
         data.response ||
         'Insufficient data available for this conclusion.';
+      const replyText = cleanTextResponse(rawText);
 
       const assistantMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
@@ -227,14 +307,14 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-black text-slate-900 leading-tight">
-                VigilAI Grounded Assistant &amp; Decision Copilot
+                AI Vigilance Chatbot
               </h2>
               <span className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold">
-                Anti-Hallucination Active
+                Natural Text Grounded
               </span>
             </div>
             <p className="text-[11px] text-slate-500">
-              Grounded exclusively in 14 backend tools, Scikit-Learn ML models, and Firebase Firestore
+              Grounded exclusively in MPLADS registry, Scikit-Learn ML models &amp; MoSPI statutory guidelines
             </p>
           </div>
         </div>
@@ -244,17 +324,17 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2">
             Role Lens:
           </span>
-          {(['ministry', 'state', 'district', 'mp', 'citizen'] as const).map((r) => (
+          {(['minister', 'inspector', 'citizen'] as const).map((r) => (
             <button
               key={r}
               onClick={() => setSelectedRole(r)}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold capitalize transition-all cursor-pointer ${
+              className={`px-3 py-1 rounded-lg text-[11px] font-bold capitalize transition-all cursor-pointer ${
                 selectedRole === r
                   ? 'bg-white text-indigo-600 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              {r}
+              {r === 'minister' ? 'Minister' : r === 'inspector' ? 'Inspector' : 'Citizen'}
             </button>
           ))}
         </div>
@@ -438,7 +518,7 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
           type="text"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          placeholder={`Ask VigilAI as ${selectedRole.toUpperCase()} (e.g., 'Show 5 highest-risk projects', 'Assign inspection for VAR-089')...`}
+          placeholder={`Ask AI Vigilance Chatbot as ${getRoleDisplayName(selectedRole)} (e.g., 'Show highest-risk projects', 'Inspection checklist')...`}
           className="flex-1 px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none font-medium"
         />
         <button

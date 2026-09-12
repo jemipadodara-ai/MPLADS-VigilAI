@@ -39,14 +39,8 @@ const MAX_LOGIN_ATTEMPTS = 7;
 // Valid RBAC Roles
 export const ALLOWED_ROLES = [
   'minister',
-  'district',
-  'citizen',
-  'admin',
-  'nodal_officer',
-  'mp',
-  'analyst',
-  'viewer',
   'inspector',
+  'citizen',
 ] as const;
 
 // Sign In Validation Schema
@@ -145,80 +139,26 @@ export const PRECONFIGURED_USERS: Record<
     name: 'Hon. Union Minister Shri P. K. Rao',
     role: 'minister',
     department: 'Ministry of Statistics and Programme Implementation (MoSPI)',
-    description: 'Executive Authority: Freeze disbursements, assign field inquiries, issue show-cause notices. All decisions recorded in statutory registry.',
+    description: 'Executive Authority: Freeze disbursements, assign field inquiries, issue statutory directives and oversight.',
     badge: 'Executive Clearance',
     canDecide: true,
-  },
-  'district@mplads.vigilai': {
-    pass: 'VigilAI@2026',
-    name: 'Dr. Amit Sharma, IAS (District Magistrate)',
-    role: 'district',
-    department: 'Office of the District Magistrate & Nodal Authority',
-    description: 'Competent District Authority: Issue local inspections, review billing, execute enforcement.',
-    badge: 'District Authority',
-    canDecide: true,
-  },
-  'citizen@mplads.vigilai': {
-    pass: 'VigilAI@2026',
-    name: 'Citizen Watchdog (Public Observer)',
-    role: 'citizen',
-    department: 'Public Transparency & Social Audit Cell',
-    description: 'View-Only Access: Inspect all project data, AI fraud scores, ML predictions, and case files. Cannot make administrative decisions.',
-    badge: 'View-Only Access',
-    canDecide: false,
-  },
-  'admin@mplads.vigilai': {
-    pass: 'VigilAI@2026',
-    name: 'Chief Vigilance Administrator',
-    role: 'admin',
-    department: 'Ministry of Statistics and Programme Implementation (MoSPI)',
-    description: 'System administration: Full governance, model tuning, and case supervision.',
-    badge: 'Super Admin',
-    canDecide: true,
-  },
-  'nodal@mplads.vigilai': {
-    pass: 'VigilAI@2026',
-    name: 'District Nodal Officer',
-    role: 'nodal_officer',
-    department: 'Office of the District Magistrate / Collectorate',
-    description: 'Technical inspection oversight and evidence verification.',
-    badge: 'Nodal Officer',
-    canDecide: true,
-  },
-  'mp@mplads.vigilai': {
-    pass: 'VigilAI@2026',
-    name: 'Hon. Member of Parliament',
-    role: 'mp',
-    department: 'Parliament of India (Lok Sabha / Rajya Sabha)',
-    description: 'Parliamentary constituency oversight and progress reviews.',
-    badge: 'Parliamentarian',
-    canDecide: true,
-  },
-  'analyst@mplads.vigilai': {
-    pass: 'VigilAI@2026',
-    name: 'Senior Audit Analyst',
-    role: 'analyst',
-    department: 'Comptroller & Auditor General (CAG) Cell',
-    description: 'Vigilance analytics and anomaly deep-dives.',
-    badge: 'Auditor',
-    canDecide: false,
   },
   'inspector@mplads.vigilai': {
     pass: 'VigilAI@2026',
     name: 'Sh. Ramesh Kumar Verma, Field Inspector (INS-104)',
     role: 'inspector',
     department: 'District Collectorate — Field Inspection Wing, Varanasi',
-    description: 'Field Inspection Officer: Conduct on-site physical progress verification for 3 assigned MPLADS projects.',
+    description: 'Field Inspection Officer: Conduct on-site physical progress verification for assigned MPLADS works.',
     badge: 'Field Inspector',
     canDecide: false,
   },
-  'inspector2@mplads.vigilai': {
+  'citizen@mplads.vigilai': {
     pass: 'VigilAI@2026',
-    name: 'Ms. Priya Nair, Field Inspector (INS-201)',
-    role: 'inspector',
-    department: 'District Collectorate — Field Inspection Wing, Thiruvananthapuram',
-    description: 'Field Inspection Officer: Technical site verification for assigned Kerala projects.',
-    badge: 'Field Inspector',
+    name: 'Citizen Watchdog (Public Observer)',
+    role: 'citizen',
+    department: 'Public Transparency & Social Audit Cell',
+    description: 'Public Observer: Inspect project registry, track audit milestones, verify civic amenities, and submit social audit feedback.',
+    badge: 'Public Transparency',
     canDecide: false,
   },
 };
@@ -233,7 +173,7 @@ interface LoginPageProps {
 export const LoginPage: React.FC<LoginPageProps> = ({
   onLoginSuccess,
   onExplorePublic,
-  initialRole = 'admin',
+  initialRole = 'minister',
   initialMode = 'signin',
 }) => {
   const { t } = useTranslation();
@@ -300,7 +240,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     defaultValues: {
       name: '',
       email: '',
-      role: 'nodal_officer',
+      role: 'citizen',
       department: '',
       password: '',
       confirmPassword: '',
@@ -344,7 +284,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
   // Autofill demo credentials
   const fillDemoCredentials = () => {
-    setValueLogin('email', 'admin@mplads.vigilai', { shouldValidate: true });
+    setValueLogin('email', 'minister@mplads.vigilai', { shouldValidate: true });
     setValueLogin('password', 'VigilAI@2026', { shouldValidate: true });
     setApiError(null);
   };
@@ -936,8 +876,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 </button>
               </div>
 
-              {/* Quick 1-click Role Selector Pills */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-[11px]">
+              {/* Quick 1-click Role Selector Pills: ONLY 3 ROLES (Minister, Inspector, Citizen) */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
                 <button
                   type="button"
                   onClick={() => {
@@ -945,46 +885,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     setValueLogin('password', 'VigilAI@2026', { shouldValidate: true });
                     setValueLogin('role', 'minister');
                   }}
-                  className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/50 hover:bg-amber-50 dark:hover:bg-amber-950/30 text-amber-800 dark:text-amber-300 font-semibold text-left transition-colors cursor-pointer"
+                  className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/50 hover:bg-amber-50 dark:hover:bg-amber-950/30 text-amber-800 dark:text-amber-300 font-semibold text-left transition-all cursor-pointer shadow-2xs hover:shadow-xs"
                 >
-                  <div className="font-bold">👑 {t('auth.executiveClearance', 'Minister')}</div>
-                  <div className="text-[9px] text-slate-500 font-mono truncate">minister@...</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setValueLogin('email', 'district@mplads.vigilai', { shouldValidate: true });
-                    setValueLogin('password', 'VigilAI@2026', { shouldValidate: true });
-                    setValueLogin('role', 'district');
-                  }}
-                  className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-900/50 hover:bg-blue-50 dark:hover:bg-blue-950/30 text-blue-800 dark:text-blue-300 font-semibold text-left transition-colors cursor-pointer"
-                >
-                  <div className="font-bold">🏛️ {t('auth.districtAuthority', 'Collector')}</div>
-                  <div className="text-[9px] text-slate-500 font-mono truncate">district@...</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setValueLogin('email', 'citizen@mplads.vigilai', { shouldValidate: true });
-                    setValueLogin('password', 'VigilAI@2026', { shouldValidate: true });
-                    setValueLogin('role', 'citizen');
-                  }}
-                  className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-900/50 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 font-semibold text-left transition-colors cursor-pointer"
-                >
-                  <div className="font-bold">👁️ {t('auth.generalCitizen', 'Citizen')}</div>
-                  <div className="text-[9px] text-slate-500 font-mono truncate">citizen@...</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setValueLogin('email', 'admin@mplads.vigilai', { shouldValidate: true });
-                    setValueLogin('password', 'VigilAI@2026', { shouldValidate: true });
-                    setValueLogin('role', 'admin');
-                  }}
-                  className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-cyan-200 dark:border-cyan-900/50 hover:bg-cyan-50 dark:hover:bg-cyan-950/30 text-cyan-800 dark:text-cyan-300 font-semibold text-left transition-colors cursor-pointer"
-                >
-                  <div className="font-bold">⚙️ {t('auth.superAdmin', 'Admin')}</div>
-                  <div className="text-[9px] text-slate-500 font-mono truncate">admin@...</div>
+                  <div className="font-bold flex items-center gap-1.5 text-xs">
+                    <span>👑</span>
+                    <span>{t('auth.executiveClearance', 'Union Minister')}</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 font-mono truncate mt-0.5">minister@mplads.vigilai</div>
                 </button>
                 <button
                   type="button"
@@ -993,10 +900,28 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     setValueLogin('password', 'VigilAI@2026', { shouldValidate: true });
                     setValueLogin('role', 'inspector');
                   }}
-                  className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-orange-200 dark:border-orange-900/50 hover:bg-orange-50 dark:hover:bg-orange-950/30 text-orange-800 dark:text-orange-300 font-semibold text-left transition-colors cursor-pointer"
+                  className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-orange-200 dark:border-orange-900/50 hover:bg-orange-50 dark:hover:bg-orange-950/30 text-orange-800 dark:text-orange-300 font-semibold text-left transition-all cursor-pointer shadow-2xs hover:shadow-xs"
                 >
-                  <div className="font-bold">🔍 {t('auth.fieldInspector', 'Inspector')}</div>
-                  <div className="text-[9px] text-slate-500 font-mono truncate">inspector@...</div>
+                  <div className="font-bold flex items-center gap-1.5 text-xs">
+                    <span>🔍</span>
+                    <span>{t('auth.fieldInspector', 'Field Inspector')}</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 font-mono truncate mt-0.5">inspector@mplads.vigilai</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setValueLogin('email', 'citizen@mplads.vigilai', { shouldValidate: true });
+                    setValueLogin('password', 'VigilAI@2026', { shouldValidate: true });
+                    setValueLogin('role', 'citizen');
+                  }}
+                  className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-900/50 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 font-semibold text-left transition-all cursor-pointer shadow-2xs hover:shadow-xs"
+                >
+                  <div className="font-bold flex items-center gap-1.5 text-xs">
+                    <span>👁️</span>
+                    <span>{t('auth.generalCitizen', 'Citizen')}</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 font-mono truncate mt-0.5">citizen@mplads.vigilai</div>
                 </button>
               </div>
             </div>
@@ -1073,7 +998,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         {/* ============================================================ */}
         {authMode === 'signup' && (
           <form
-            onSubmit={handleSubmitSignUp((data) => onSignUpSubmit(data as RegisterFormData))}
+            onSubmit={handleSubmitSignUp((data) => onSignUpSubmit(data as unknown as RegisterFormData))}
             className="space-y-4"
             noValidate
           >
@@ -1174,10 +1099,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                       : 'bg-slate-50 border-slate-200 text-slate-900 focus:bg-white focus:ring-blue-500/20 focus:border-blue-500'
                   }`}
                 >
-                  <option value="nodal_officer">{t('auth.nodalOfficer', 'District Nodal Officer (Collectorate)')}</option>
-                  <option value="analyst">{t('auth.auditor', 'CAG / Senior Audit Analyst')}</option>
-                  <option value="mp">{t('auth.parliamentarian', 'Hon. Member of Parliament')}</option>
-                  <option value="admin">{t('auth.superAdmin', 'Chief Vigilance Administrator')}</option>
+                  <option value="minister">{t('auth.executiveClearance', 'Union Minister / Executive Authority')}</option>
+                  <option value="inspector">{t('auth.fieldInspector', 'Field Inspection Officer')}</option>
+                  <option value="citizen">{t('auth.generalCitizen', 'Citizen / Social Auditor')}</option>
                 </select>
               </div>
 

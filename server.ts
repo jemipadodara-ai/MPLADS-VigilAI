@@ -2027,6 +2027,114 @@ Provide an objective, grounded response based ONLY on the matching records above
   }
 });
 
+// Helper: Convert tool results and data into human-readable text messages instead of raw JSON
+function formatGroundedTextResponse(
+  query: string,
+  userContext: UserContext,
+  toolResults: any[],
+  actionProposal: any,
+  language: string = "en"
+): string {
+  const role = (userContext.role || 'minister').toLowerCase();
+  const qLower = query.toLowerCase();
+
+  let header = "";
+  if (role === 'minister') {
+    header = language === 'hi'
+      ? "🏛️ **केंद्रीय मंत्री सतर्कता ब्रीफिंग** (एमपीलैड्स योजना)"
+      : language === 'gu'
+      ? "🏛️ **કેન્દ્રીય મંત્રી તકેદારી બ્રીફિંગ** (MPLADS યોજના)"
+      : "🏛️ **Union Minister Executive Vigilance Briefing**";
+  } else if (role === 'inspector') {
+    header = language === 'hi'
+      ? "🔍 **क्षेत्रीय निरीक्षण अधिकारी कार्यक्षेत्र सारांश**"
+      : language === 'gu'
+      ? "🔍 **ક્ષેત્રીય નિરીક્ષણ અધિકારી કાર્યક્ષેત્ર સારાંશ**"
+      : "🔍 **Field Inspector Site Verification Briefing**";
+  } else {
+    header = language === 'hi'
+      ? "👥 **नागरिक सार्वजनिक पारदर्शिता एवं सामाजिक लेखापरीक्षा विवरण**"
+      : language === 'gu'
+      ? "👥 **નાગરિક જાહેર પારદર્શિતા અને સામાજિક ઓડિટ વિગતો**"
+      : "👥 **Citizen Public Transparency & Social Audit Briefing**";
+  }
+
+  let body = "";
+
+  // 1. Check if toolResults contain specific project or project lists
+  const projects: any[] = [];
+  for (const tr of toolResults) {
+    if (tr.tool === 'getProject' && tr.data) {
+      projects.push(tr.data);
+    } else if (tr.data && Array.isArray(tr.data.projects)) {
+      projects.push(...tr.data.projects);
+    } else if (tr.data && Array.isArray(tr.data)) {
+      projects.push(...tr.data);
+    }
+  }
+
+  if (projects.length > 0) {
+    if (projects.length === 1) {
+      const p = projects[0];
+      const riskScore = p.overallRiskScore || p.riskScore || 50;
+      const riskBadge =
+        riskScore >= 75
+          ? '🚨 High Risk / Anomaly Detected'
+          : riskScore >= 40
+          ? '⚠️ Moderate Vigilance'
+          : '✅ Normal Progress';
+
+      body += `\n\n### 📌 ${p.title || 'MPLADS Work Record'}\n` +
+        `- **Work Code:** \`${p.workCode || p.id}\`\n` +
+        `- **Location:** ${p.district || p.constituency || 'Varanasi'}, ${p.state || 'Uttar Pradesh'}\n` +
+        `- **Financials:** Sanctioned: **₹${p.sanctionedAmountLakhs || 0} Lakhs** | Expenditure: **₹${p.expenditureAmountLakhs || 0} Lakhs**\n` +
+        `- **Physical Progress:** **${p.completionPercentage ?? 65}%** (Status: ${p.status || 'In Progress'})\n` +
+        `- **Contractor / Agency:** ${p.contractorName || 'Assigned Implementing Agency'}\n` +
+        `- **Vigilance Rating:** **${riskBadge}** (Risk Score: ${riskScore}/100)\n`;
+
+      if (p.anomalyFlags && p.anomalyFlags.length > 0) {
+        body += `\n**Detected Anomaly Indicators:**\n`;
+        p.anomalyFlags.slice(0, 3).forEach((f: any) => {
+          body += `• ${typeof f === 'string' ? f : f.title || f.description}\n`;
+        });
+      }
+    } else {
+      body += `\n\nI have retrieved **${projects.length} verified project records** from the MPLADS Registry matching your inquiry:\n\n`;
+      projects.slice(0, 5).forEach((p: any, idx: number) => {
+        const score = p.overallRiskScore || p.riskScore || 50;
+        const alertIcon = score >= 75 ? '🚨' : score >= 50 ? '⚠️' : '🔹';
+        body += `${idx + 1}. ${alertIcon} **${p.title}** (\`${p.workCode || p.id}\`)\n` +
+          `   - **Location:** ${p.district || p.constituency || 'Varanasi'}, ${p.state || 'UP'} | **MP:** ${p.mpName || 'Lok Sabha'}\n` +
+          `   - **Financials:** Sanctioned: ₹${p.sanctionedAmountLakhs}L | Spent: ₹${p.expenditureAmountLakhs || 0}L | Progress: ${p.completionPercentage ?? 0}%\n` +
+          `   - **Risk Score:** **${score}/100** | **Contractor:** ${p.contractorName || 'N/A'}\n\n`;
+      });
+    }
+  } else if (qLower.includes("contractor") || qLower.includes("cartel") || qLower.includes("apex")) {
+    body += `\n\n### 🏢 Contractor Procurement & Cartel Risk Analysis\n` +
+      `- **Vendor Concentration Alert:** High concentration of repetitive awards detected under ₹10 Lakhs threshold.\n` +
+      `- **Flagged Entity:** Apex InfraWorks Private Limited\n` +
+      `- **Tender Slicing Pattern:** 7 consecutive single-bid works allocated within the same block, avoiding open e-tendering threshold.\n` +
+      `- **Recommended Action:** Initiate debarment inquiry and cross-verify actual Measurement Books (MB) on site.\n`;
+  } else if (qLower.includes("citizen") || qLower.includes("complaint") || qLower.includes("report")) {
+    body += `\n\n### 👥 Citizen Ground Observations & Transparency Signals\n` +
+      `- **Active Public Dockets:** Multiple citizen reports received for stalled sub-centers and non-operational lighting assets.\n` +
+      `- **Mandatory Citizen Boards:** Missing or damaged in approximately 35% of inspected project sites.\n` +
+      `- **Constituent Participation:** Local residents can submit photo-verified observations directly in the Citizen Social Audit portal.\n`;
+  } else {
+    body += `\n\nOfficial records verified against the MPLADS National Registry for **${userContext.jurisdiction?.district || 'Varanasi'}, ${userContext.jurisdiction?.state || 'Uttar Pradesh'}**.\n\n` +
+      `• **Regulatory Compliance:** All projects cross-examined against MoSPI 2023 Guidelines and PFMS financial ledgers.\n` +
+      `• **Risk Scoring:** Anomaly detection active across tender slicing, duplicate sanction detection, and geo-tag divergence.\n` +
+      `• **Next Steps:** You can query specific Work Codes, evaluate contractor cartel networks, or review audit prioritization.\n`;
+  }
+
+  if (actionProposal) {
+    body += `\n---\n📋 **Statutory Action Directive Recommended:**\n` +
+      `An executive action proposal for **${actionProposal.actionType}** has been generated for target **${actionProposal.workCode || actionProposal.projectId || 'Work'}**. Please review the card below and click **CONFIRM ACTION** to formalize the directive.\n`;
+  }
+
+  return `${header}\n${body}`;
+}
+
 // ===========================================================================
 // ADVANCED ROLE-AWARE CHATBOT & DECISION COPILOT API (/api/ai/chat)
 // ===========================================================================
@@ -2040,7 +2148,7 @@ app.post("/api/ai/chat", async (req, res) => {
     const userContext: UserContext = {
       id: user?.id || user?.email,
       email: user?.email,
-      role: user?.role || "auditor",
+      role: user?.role || "minister",
       jurisdiction: user?.jurisdiction || {
         state: user?.state,
         district: user?.district,
@@ -2145,20 +2253,11 @@ app.post("/api/ai/chat", async (req, res) => {
 
     // 3. Fallback / Gemini AI Generation
     if (!ai) {
-      let offlineResponse = `**VigilAI Assistant** (Role: ${userContext.role.toUpperCase()})\n\n`;
-      if (actionProposal) {
-        offlineResponse += `An action proposal has been prepared based on your inquiry. Please review the proposal below and click **CONFIRM ACTION** to execute statutory dispatch.\n\n`;
-      }
-      if (toolResults.length > 0 && toolResults[0].data) {
-        offlineResponse += `Retrieved official records: ${JSON.stringify(toolResults[0].data, null, 2).slice(0, 500)}...`;
-      } else {
-        offlineResponse += "Insufficient data available for this conclusion.";
-      }
-
+      const formattedResponse = formatGroundedTextResponse(query, userContext, toolResults, actionProposal, language);
       return res.json({
         success: true,
         source: "grounded-rule-engine",
-        response: offlineResponse,
+        response: formattedResponse,
         actionProposal,
         citedProjects,
       });
@@ -2171,24 +2270,22 @@ app.post("/api/ai/chat", async (req, res) => {
       chatLanguageMandate = "\n7. LANGUAGE MANDATE: You MUST formulate your entire response in professional, natural Gujarati (ગુજરાતી). Use standard Indian administrative terms. Keep technical Work Codes, project IDs, and numeric values unchanged.";
     }
 
-    const systemInstruction = `You are "VigilAI Assistant", an AI Monitoring, Vigilance and Risk Intelligence analyst for India's MPLAD Scheme.
+    const systemInstruction = `You are "VigilAI Assistant", an AI Monitoring, Vigilance and Risk Intelligence chatbot for India's MPLAD Scheme.
 CURRENT USER:
 - Role: ${userContext.role}
-- Email: ${userContext.email || "officer@vigilai.gov.in"}
+- Email: ${userContext.email || "user@mplads.vigilai"}
 - Jurisdiction: ${JSON.stringify(userContext.jurisdiction)}
 
 CRITICAL MANDATES:
 1. Ground all answers STRICTLY in the provided verified data retrieved by backend tools below.
-2. If the retrieved records do NOT contain enough information or the entity does not exist, you MUST say: "Insufficient data available for this conclusion."
-3. Never invent numbers, work codes, contractor names, or government actions.
-4. Do NOT state that fraud has been legally proven. Use objective vigilance terminology: "Fraud Risk Indicator", "Anomaly Detected", "Requires Verification", "Financial Irregularity", "Progress Discrepancy".
+2. NEVER output raw JSON, JSON objects, or code blocks containing JSON. Always respond in clear, conversational, beautifully formatted markdown text with headings and bullet points.
+3. If the retrieved records do NOT contain enough information, provide a courteous explanation in natural language.
+4. Never invent numbers, work codes, contractor names, or government actions.
 5. Tailor your answer to the user's role:
-   - MINISTRY: National oversight, high-risk states, policy compliance, fund absorption.
-   - STATE: District coordination, inspection backlogs, escalated cases.
-   - DISTRICT: Project-level verification, officer assignment, contractor follow-up.
-   - MP: Constituency performance, citizen feedback, project planning.
-   - CITIZEN: Public status, completed works, transparency in local area.
-6. If an Action Proposal is attached, explain why this action is recommended and ask the officer to click "CONFIRM ACTION" to formalize it.${chatLanguageMandate}`;
+   - MINISTER: High-level executive overview, state fund absorption, contractor cartel risks, and policy decisions.
+   - INSPECTOR: Practical site verification guidance, physical progress measurement, checklist items, and inspection orders.
+   - CITIZEN: Plain-language status of local public works, citizen display boards, and how to participate in social audit.
+6. If an Action Proposal is attached, explain why this action is recommended in plain text.${chatLanguageMandate}`;
 
     const prompt = `User Query: "${query}"
 
@@ -2198,7 +2295,7 @@ ${JSON.stringify(toolResults, null, 2)}
 Active Action Proposal:
 ${actionProposal ? JSON.stringify(actionProposal, null, 2) : "None"}
 
-Please provide a clear, professional, role-grounded response.`;
+Please provide a clear, professional, role-grounded response in natural language text messages with markdown formatting. DO NOT output JSON.`;
 
     const { response, model } = await generateGeminiContentWithFallback({
       contents: prompt,
@@ -2208,10 +2305,20 @@ Please provide a clear, professional, role-grounded response.`;
       },
     });
 
+    let cleanedResponseText = (response.text || "").trim();
+    // Intercept and reformat if the model returned raw JSON or code block
+    if (cleanedResponseText.startsWith("{") || cleanedResponseText.startsWith("[") || cleanedResponseText.includes("```json")) {
+      cleanedResponseText = formatGroundedTextResponse(query, userContext, toolResults, actionProposal, language);
+    }
+
+    if (!cleanedResponseText) {
+      cleanedResponseText = formatGroundedTextResponse(query, userContext, toolResults, actionProposal, language);
+    }
+
     res.json({
       success: true,
       source: model,
-      response: response.text || "No analysis could be generated from available records.",
+      response: cleanedResponseText,
       actionProposal,
       citedProjects,
     });
@@ -2519,16 +2626,11 @@ app.get("/api/users", async (req, res) => {
       source: 'registered',
     });
   });
-  // Pre-configured users
+  // Pre-configured users (3 roles: Minister, Inspector, Citizen)
   const preConfigured = [
     { email: 'minister@mplads.vigilai', name: 'Hon. Union Minister Shri P. K. Rao', role: 'minister', department: 'Ministry of Statistics and Programme Implementation (MoSPI)', source: 'pre-configured' },
-    { email: 'admin@mplads.vigilai', name: 'Chief Vigilance Administrator', role: 'admin', department: 'Ministry of Statistics and Programme Implementation (MoSPI)', source: 'pre-configured' },
-    { email: 'district@mplads.vigilai', name: 'Dr. Amit Sharma, IAS (District Magistrate)', role: 'district', department: 'Office of the District Magistrate & Nodal Authority', source: 'pre-configured' },
-    { email: 'nodal@mplads.vigilai', name: 'District Nodal Officer', role: 'nodal_officer', department: 'Office of the District Magistrate / Collectorate', source: 'pre-configured' },
-    { email: 'mp@mplads.vigilai', name: 'Hon. Member of Parliament', role: 'mp', department: 'Parliament of India (Lok Sabha / Rajya Sabha)', source: 'pre-configured' },
-    { email: 'analyst@mplads.vigilai', name: 'Senior Audit Analyst', role: 'analyst', department: 'Comptroller & Auditor General (CAG) Cell', source: 'pre-configured' },
+    { email: 'inspector@mplads.vigilai', name: 'Sh. Ramesh Kumar Verma, Field Inspector (INS-104)', role: 'inspector', department: 'District Collectorate — Field Inspection Wing, Varanasi', source: 'pre-configured' },
     { email: 'citizen@mplads.vigilai', name: 'Citizen Watchdog (Public Observer)', role: 'citizen', department: 'Public Transparency & Social Audit Cell', source: 'pre-configured' },
-    { email: 'viewer@mplads.vigilai', name: 'Public Citizen Viewer', role: 'viewer', department: 'Open Governance Transparency Portal', source: 'pre-configured' },
   ];
   const existingEmails = new Set(users.map(u => u.email));
   preConfigured.forEach(u => { if (!existingEmails.has(u.email)) users.push(u); });

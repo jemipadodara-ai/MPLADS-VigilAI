@@ -46,7 +46,6 @@ export type ActiveTab =
   | 'projects'
   | 'contractors'
   | 'map'
-  | 'assistant-settings'
   | 'profile'
   | 'admin-users'
   | 'inspector-dashboard'
@@ -188,23 +187,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         icon: MapPin,
         section: t('nav.sectionRegistries', 'CORE REGISTRIES'),
       },
-      {
-        id: 'admin-users',
-        label: t('nav.adminUsers', 'User Accounts'),
-        icon: Users,
-        section: t('nav.sectionAdmin', 'ADMINISTRATION'),
-      },
-      {
-        id: 'assistant-settings',
-        label: t('nav.settings', 'Settings'),
-        icon: Sparkles,
-      },
     ];
 
     if (!user) {
       items.push({
         id: 'login',
-        label: t('header.officerSignIn', 'Officer Sign In'),
+        label: t('header.officerSignIn', 'Sign In'),
         icon: Lock,
       });
     }
@@ -212,8 +200,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return items;
   }, [t, totalProjectsCount, user]);
 
-  // Inspector-specific nav items (strictly separate from officer nav)
+  // Inspector-specific nav items (strictly assigned projects & tools)
   const inspectorNavItems: NavItem[] = useMemo(() => [
+    {
+      id: 'landing',
+      label: t('nav.overview', 'Overview'),
+      icon: Globe,
+    },
     {
       id: 'inspector-dashboard',
       label: t('nav.inspectorDashboard', 'My Dashboard'),
@@ -227,43 +220,47 @@ export const Sidebar: React.FC<SidebarProps> = ({
       section: t('nav.sectionInspector', 'FIELD INSPECTION'),
     },
     {
+      id: 'ai-copilot',
+      label: t('nav.aiChatbot', 'AI Vigilance Chatbot'),
+      icon: Sparkles,
+      badge: 'Grounded',
+      section: t('nav.sectionInspector', 'FIELD INSPECTION'),
+    },
+    {
       id: 'map',
       label: t('nav.gisMap', 'Project Map'),
       icon: MapPin,
       section: t('nav.sectionInspector', 'FIELD INSPECTION'),
     },
-    {
-      id: 'assistant-settings',
-      label: t('nav.settings', 'Settings'),
-      icon: Sparkles,
-    },
   ], [t]);
 
-  const userRole = user?.role || null;
-  const isViewerOnly = isCitizenOrViewer(userRole);
-  const isAdmin = ['admin', 'minister'].includes((userRole || '').toLowerCase());
+  const userRole = (user?.role || '').toLowerCase();
+  const isViewerOnly = isCitizenOrViewer(userRole) || userRole === 'citizen';
   const userIsInspector = isInspector(userRole);
+  const isMinister = userRole === 'minister' || userRole === 'admin';
 
-  const officerOnlyTabs: ActiveTab[] = [
-    'decision-center',
-    'audit-prioritization',
-    'inspection-workbench',
-    'compliance-center',
-    'cost-intelligence',
-    'duplicate-detection',
-    'executive-briefing',
-    'national-command',
+  // Allowed tabs for public/citizen users
+  const citizenAllowedTabs: ActiveTab[] = [
+    'landing',
+    'citizen-portal',
+    'projects',
+    'map',
     'ai-copilot',
+    'login',
   ];
 
-  // Inspectors get a completely separate, restricted nav
+  // Inspectors get restricted inspectorNavItems
   const visibleNavItems = userIsInspector
     ? inspectorNavItems
+    : isViewerOnly
+    ? navItems.filter((item) => citizenAllowedTabs.includes(item.id))
     : navItems.filter((item) => {
-        if (isViewerOnly && officerOnlyTabs.includes(item.id)) return false;
-        if (item.id === 'admin-users' && !isAdmin) return false;
-        // Hide inspector tabs from non-inspectors
+        // Minister does NOT need citizen social audit form
+        if (isMinister && item.id === 'citizen-portal') return false;
+        // Hide inspector-only tabs from non-inspectors
         if (item.id === 'inspector-dashboard' || item.id === 'inspector-project') return false;
+        // Hide user accounts from standard view
+        if (item.id === 'admin-users') return false;
         return true;
       });
 

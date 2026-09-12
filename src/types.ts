@@ -646,6 +646,9 @@ export interface CitizenReportSubmission {
   corroborationCount: number;
   submittedAt: string;
   citizenContact?: string;
+  citizenName?: string;
+  citizenPhone?: string;
+  isVerifiedCitizen?: boolean;
   isAnonymous: boolean;
   status: 'Pending Triage' | 'Corroborated' | 'Dispatched to Officer' | 'Inspected' | 'Resolved';
 }
