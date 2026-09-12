@@ -75,9 +75,15 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return TRANSLATIONS[language] || en;
   }, [language]);
 
-  // Nested translation helper: t('nav.commandCenter')
+  // Nested translation & direct phrase helper: t('nav.commandCenter') or t('Sign In')
   const t = useCallback(
     (keyPath: string, fallbackText?: string): string => {
+      // 1. Check direct phrase map in current language
+      if (dict.phrases && typeof dict.phrases[keyPath] === 'string') {
+        return dict.phrases[keyPath];
+      }
+
+      // 2. Nested dot-path in current language dict
       const parts = keyPath.split('.');
       let current: any = dict;
       for (const part of parts) {
@@ -93,7 +99,12 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return current;
       }
 
-      // Fallback to English dictionary
+      // 3. Fallback to English phrase map
+      if (en.phrases && typeof en.phrases[keyPath] === 'string') {
+        return en.phrases[keyPath];
+      }
+
+      // 4. Fallback to English dictionary dot-path
       let fallbackCurrent: any = en;
       for (const part of parts) {
         if (fallbackCurrent && typeof fallbackCurrent === 'object' && part in fallbackCurrent) {

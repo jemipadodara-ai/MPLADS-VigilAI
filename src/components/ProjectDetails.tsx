@@ -4,6 +4,7 @@ import { RiskScore } from './RiskScore';
 import { RiskBadge } from './RiskBadge';
 import { computeProjectRisk } from '../utils/riskEngine';
 import { exportSingleProjectToWord } from '../utils/docxExport';
+import { useTranslation } from '../i18n/LanguageContext';
 import {
   X,
   MapPin,
@@ -38,6 +39,7 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
   onUpdateInvestigation,
   onOpenCitizenVerify,
 }) => {
+  const { t } = useTranslation();
   const [isExporting, setIsExporting] = useState(false);
   const [verifications, setVerifications] = useState<CitizenVerification[]>([]);
 
@@ -91,7 +93,7 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-xs font-bold text-indigo-700">
               <FileText className="w-3.5 h-3.5" />
-              <span>Project Risk Details</span>
+              <span>{t('projectDetail.title', 'Project Risk Details')}</span>
               <span className="text-slate-300">•</span>
               <span className="text-slate-600 font-mono">{project.workCode || project.id}</span>
             </div>
@@ -104,7 +106,7 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
                 {project.district || project.constituency}, {project.state}
               </span>
               <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 font-semibold">
-                Status: {project.status}
+                {t('common.status', 'Status')}: {t(project.status, project.status)}
               </span>
             </div>
           </div>
@@ -119,12 +121,12 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
               title="Download detailed project risk report as real Microsoft Word document (.docx)"
             >
               <FileDown className="w-4 h-4" />
-              <span>{isExporting ? 'Generating...' : 'Export Word Report'}</span>
+              <span>{isExporting ? t('projectDetail.generating', 'Generating...') : t('projectDetail.exportWord', 'Export Word Report')}</span>
             </button>
             <button
               onClick={onClose}
               className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-              title="Close modal"
+              title={t('common.close', 'Close')}
             >
               <X className="w-5 h-5" />
             </button>
@@ -157,7 +159,7 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
                         : 'text-emerald-600'
                     }`}
                   />
-                  <span>Assigned Project Risk Assessment</span>
+                  <span>{t('projectDetail.assignedAssessment', 'Assigned Project Risk Assessment')}</span>
                 </div>
                 <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1">
                   {riskAnalysis.riskTierLabel.toUpperCase()} — {riskAnalysis.riskScore}/100
@@ -168,7 +170,7 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
               <div className="flex items-center gap-3">
                 <RiskBadge level={riskAnalysis.riskLevel} size="lg" />
                 <div className="px-4 py-2 rounded-xl bg-white border border-slate-200 shadow-2xs text-center min-w-[95px]">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Risk Score</span>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">{t('common.riskScore', 'Risk Score')}</span>
                   <span className="text-xl font-black font-mono text-slate-900">
                     {riskAnalysis.riskScore}
                     <span className="text-xs font-semibold text-slate-400">/100</span>
@@ -183,7 +185,7 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
             <div className="mt-5 space-y-2">
               <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
                 <AlertCircle className="w-4 h-4 text-slate-600" />
-                <span>Why is this project flagged?</span>
+                <span>{t('projectDetail.whyFlagged', 'Why is this project flagged?')}</span>
               </h2>
               <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-2.5">
                 {riskAnalysis.reasons.map((reason, idx) => (
@@ -211,49 +213,49 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
             <div className="mt-5 space-y-2">
               <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
                 <Activity className="w-4 h-4 text-indigo-600" />
-                <span>Risk Evidence</span>
+                <span>{t('projectDetail.riskEvidence', 'Risk Evidence')}</span>
               </h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="p-3.5 bg-white rounded-xl border border-slate-200 space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">Approved Amount</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">{t('projectDetail.approvedAmount', 'Approved Amount')}</span>
                   <div className="text-base font-bold font-mono text-slate-900">
-                    ₹{sanctionedAmount.toFixed(2)} Lakh
+                    ₹{sanctionedAmount.toFixed(2)} {t('common.lakhs', 'Lakh')}
                   </div>
                 </div>
 
                 <div className="p-3.5 bg-white rounded-xl border border-slate-200 space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">Actual Expenditure</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">{t('projectDetail.actualExpenditure', 'Actual Expenditure')}</span>
                   <div className="text-base font-bold font-mono text-slate-900">
-                    ₹{spentAmount.toFixed(2)} Lakh
+                    ₹{spentAmount.toFixed(2)} {t('common.lakhs', 'Lakh')}
                   </div>
                   {costDiff > 0 ? (
                     <span className="inline-block text-[10px] font-bold text-rose-600">
-                      +₹{costDiff.toFixed(2)} Lakh (+{riskAnalysis.evidence.costOverrunPct}% Overrun)
+                      +₹{costDiff.toFixed(2)} {t('common.lakhs', 'Lakh')} (+{riskAnalysis.evidence.costOverrunPct}% {t('projectDetail.overrun', 'Overrun')})
                     </span>
                   ) : (
-                    <span className="text-[10px] text-emerald-600 font-bold">Within budget</span>
+                    <span className="text-[10px] text-emerald-600 font-bold">{t('projectDetail.withinBudget', 'Within budget')}</span>
                   )}
                 </div>
 
                 <div className="p-3.5 bg-white rounded-xl border border-slate-200 space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">Physical Progress</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">{t('projectDetail.physicalProgress', 'Physical Progress')}</span>
                   <div className="text-base font-bold text-slate-900">
-                    {progressPct}% Done
+                    {progressPct}% {t('projectDetail.done', 'Done')}
                   </div>
                   <span className="text-[10px] text-slate-500 font-medium">
-                    Funds released: {spentPct}%
+                    {t('projectDetail.fundsReleased', 'Funds released')}: {spentPct}%
                   </span>
                 </div>
 
                 <div className="p-3.5 bg-white rounded-xl border border-slate-200 space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">Timeline Status</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">{t('projectDetail.timelineStatus', 'Timeline Status')}</span>
                   <div className="text-base font-bold text-slate-900">
                     {riskAnalysis.evidence.isDelayed
-                      ? `${riskAnalysis.evidence.delayDays} Days Overdue`
-                      : 'On Schedule'}
+                      ? `${riskAnalysis.evidence.delayDays} ${t('phrases.Days Overdue', 'Days Overdue')}`
+                      : t('phrases.On Schedule', 'On Schedule')}
                   </div>
                   <span className="text-[10px] text-slate-500 truncate block">
-                    Target: {project.expectedCompletionDate || 'Not Specified'}
+                    {t('phrases.Target', 'Target')}: {project.expectedCompletionDate || t('phrases.Not Specified', 'Not Specified')}
                   </span>
                 </div>
               </div>
@@ -266,69 +268,69 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
           <div className="space-y-3">
             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
               <Building className="w-4 h-4 text-slate-500" />
-              <span>Project Details</span>
+              <span>{t('projectDetail.title', 'Project Details')}</span>
             </div>
 
             <div className="bg-slate-50/90 rounded-2xl border border-slate-200 p-4 sm:p-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-6 text-xs">
                 <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Project ID</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">{t('projects.workCode', 'Project ID')}</span>
                   <strong className="text-slate-900 font-mono font-bold text-xs">
                     {project.workCode || project.id}
                   </strong>
                 </div>
 
                 <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">District &amp; State</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">{t('projects.district', 'District')} &amp; {t('projects.state', 'State')}</span>
                   <span className="text-slate-900 font-medium">
                     {project.district || project.constituency}, {project.state}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Category / Sector</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">{t('phrases.Category / Sector', 'Category / Sector')}</span>
                   <span className="text-slate-900 font-medium">
                     {project.category || 'Public Works'}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Executing Contractor</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">{t('projects.contractor', 'Executing Contractor')}</span>
                   <span className="text-slate-900 font-medium truncate block">
                     {project.contractorName || 'Open Procurement / Unassigned'}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Implementing Agency</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">{t('projects.agency', 'Implementing Agency')}</span>
                   <span className="text-slate-900 font-medium truncate block">
                     {project.implementingAgency || 'District Authority'}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Sponsoring MP Office</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">{t('projectDetail.mpName', 'Sponsoring MP Office')}</span>
                   <span className="text-slate-900 font-medium">
                     {project.mpName || 'Lok Sabha / Rajya Sabha MP'}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Sanction Date</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">{t('phrases.Sanction Date', 'Sanction Date')}</span>
                   <span className="text-slate-700">
-                    {project.sanctionDate || 'Not Specified'}
+                    {project.sanctionDate || t('phrases.Not Specified', 'Not Specified')}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Target Completion Date</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">{t('phrases.Target Completion Date', 'Target Completion Date')}</span>
                   <span className="text-slate-700">
-                    {project.expectedCompletionDate || 'Not Specified'}
+                    {project.expectedCompletionDate || t('phrases.Not Specified', 'Not Specified')}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Procurement Mode</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">{t('phrases.Procurement Mode', 'Procurement Mode')}</span>
                   <span className="text-slate-700">
                     {project.tenderType || 'Open Competitive Tender'}
                   </span>
@@ -336,7 +338,7 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
 
                 {project.description && (
                   <div className="sm:col-span-3">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Scope / Description</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">{t('phrases.Scope / Description', 'Scope / Description')}</span>
                     <p className="text-slate-700 leading-relaxed mt-0.5 font-normal">
                       {project.description}
                     </p>
@@ -353,36 +355,36 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                 <IndianRupee className="w-3.5 h-3.5 text-indigo-600" />
-                Project Spending vs. Work Completion
+                {t('phrases.Project Spending vs. Work Completion', 'Project Spending vs. Work Completion')}
               </span>
               <span className="text-[11px] text-slate-500 font-semibold">
-                Allocation: ₹{sanctionedAmount.toFixed(2)} Lakh
+                {t('phrases.Allocation', 'Allocation')}: ₹{sanctionedAmount.toFixed(2)} {t('common.lakhs', 'Lakh')}
               </span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-[10px]">
               <div className="p-2.5 bg-white rounded-xl border border-slate-200 space-y-0.5">
-                <div className="text-slate-400 font-bold uppercase">1. Approved</div>
+                <div className="text-slate-400 font-bold uppercase">1. {t('projectDetail.approvedAmount', 'Approved')}</div>
                 <div className="text-xs font-bold font-mono text-slate-900">₹{sanctionedAmount.toFixed(1)}L</div>
                 <div className="text-slate-500">100% Budget</div>
               </div>
 
               <div className="p-2.5 bg-white rounded-xl border border-slate-200 space-y-0.5">
-                <div className="text-slate-400 font-bold uppercase">2. Disbursed</div>
+                <div className="text-slate-400 font-bold uppercase">2. {t('phrases.Disbursed', 'Disbursed')}</div>
                 <div className="text-xs font-bold font-mono text-slate-900">₹{spentAmount.toFixed(1)}L</div>
                 <div className="text-slate-500">{spentPct}% Released</div>
               </div>
 
               <div className="p-2.5 bg-white rounded-xl border border-slate-200 space-y-0.5">
-                <div className="text-slate-400 font-bold uppercase">3. Progress</div>
+                <div className="text-slate-400 font-bold uppercase">3. {t('projectDetail.physicalProgress', 'Progress')}</div>
                 <div className="text-xs font-bold font-mono text-slate-900">{progressPct}%</div>
                 <div className="text-slate-500">Physical Work</div>
               </div>
 
               <div className="p-2.5 bg-white rounded-xl border border-slate-200 space-y-0.5">
-                <div className="text-slate-400 font-bold uppercase">4. Status</div>
-                <div className="text-xs font-bold text-slate-900">{project.status}</div>
-                <div className="text-slate-500">{progressPct >= 100 ? 'Completed' : 'Active'}</div>
+                <div className="text-slate-400 font-bold uppercase">4. {t('common.status', 'Status')}</div>
+                <div className="text-xs font-bold text-slate-900">{t(project.status, project.status)}</div>
+                <div className="text-slate-500">{progressPct >= 100 ? t('Completed', 'Completed') : t('Active', 'Active')}</div>
               </div>
             </div>
           </div>
@@ -393,7 +395,7 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
                   <UserCheck className="w-4 h-4 text-emerald-700" />
-                  Citizen Ground Observations ({verifications.length})
+                  {t('projectDetail.citizenAudit', 'Citizen Ground Observations')} ({verifications.length})
                 </span>
               </div>
               <div className="space-y-2">
@@ -412,14 +414,14 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
 
           {/* Administrative Disclaimer */}
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 text-[11px] leading-relaxed">
-            <strong>Disclaimer:</strong> Risk indicators are intended to support project monitoring and review. A risk flag does not by itself indicate fraud or wrongdoing.
+            <strong>{t('phrases.Disclaimer', 'Disclaimer')}:</strong> {t('phrases.disclaimerText', 'Risk indicators are intended to support project monitoring and review. A risk flag does not by itself indicate fraud or wrongdoing.')}
           </div>
         </div>
 
         {/* Modal Footer Bar */}
         <div className="px-5 sm:px-8 py-3.5 border-t border-slate-200 bg-slate-50/80 flex items-center justify-between">
           <span className="text-xs text-slate-500 font-medium">
-            Project ID: <span className="font-mono text-slate-800">{project.workCode || project.id}</span>
+            {t('projects.workCode', 'Project ID')}: <span className="font-mono text-slate-800">{project.workCode || project.id}</span>
           </span>
           <div className="flex items-center gap-2">
             <button
@@ -427,13 +429,13 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
               disabled={isExporting}
               className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
             >
-              {isExporting ? 'Generating...' : 'Export Word Report (.docx)'}
+              {isExporting ? t('projectDetail.generating', 'Generating...') : t('projectDetail.exportWord', 'Export Word Report (.docx)')}
             </button>
             <button
               onClick={onClose}
               className="px-3.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
             >
-              Close
+              {t('common.close', 'Close')}
             </button>
           </div>
         </div>

@@ -24,6 +24,7 @@ import {
   CaseStatusBadge,
 } from '../shared/StatusBadges';
 import { DecisionActionModal, ActionModalType } from '../shared/DecisionActionModal';
+import { useTranslation } from '../../i18n/LanguageContext';
 import {
   Filter,
   Search,
@@ -110,6 +111,7 @@ export const DecisionCenter: React.FC<DecisionCenterProps> = ({
   onInspectProject,
   currentUser,
 }) => {
+  const { t } = useTranslation();
   // Local persistence state for decisions
   const [savedDecisions, setSavedDecisions] = useState<Record<string, Partial<DecisionCase>>>(loadSavedDecisions);
   const [quickMinisterMode, setQuickMinisterMode] = useState<boolean>(false);
@@ -500,14 +502,14 @@ export const DecisionCenter: React.FC<DecisionCenterProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <span className="font-black text-sm tracking-wide">
-                EXECUTIVE DECISION COMMAND
+                {t('decision.ministerQuickMode', 'EXECUTIVE DECISION COMMAND')}
               </span>
               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/20 text-amber-100 uppercase tracking-wider">
                 Real-Time Statutory Authority
               </span>
             </div>
             <p className="text-amber-100 text-xs mt-0.5 max-w-2xl leading-relaxed">
-              Decisions executed here immediately dispatch statutory orders to the backend, trigger PFMS treasury halts, log permanent audit records in Firestore, and stamp the case files in real-time.
+              {t('decision.ministerQuickDesc', 'Decisions executed here immediately dispatch statutory orders to the backend, trigger PFMS treasury halts, log permanent audit records in Firestore, and stamp the case files in real-time.')}
             </p>
           </div>
         </div>
@@ -887,7 +889,7 @@ export const DecisionCenter: React.FC<DecisionCenterProps> = ({
                       onClick={() => setExpandedCaseId(isExpanded ? null : caseItem.id)}
                       className="px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 font-bold hover:bg-slate-100 transition-colors flex items-center gap-1.5 cursor-pointer"
                     >
-                      <span>{isExpanded ? 'Hide 5Q Analysis' : 'Examine 5Q Model'}</span>
+                      <span>{isExpanded ? t('decision.hide5Q', 'Hide 5Q Analysis') : t('decision.examine5Q', 'Examine 5Q Model')}</span>
                       {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                     </button>
 
@@ -896,7 +898,7 @@ export const DecisionCenter: React.FC<DecisionCenterProps> = ({
                         onClick={() => onInspectProject(projectObj)}
                         className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold transition-colors cursor-pointer"
                       >
-                        Full Dossier
+                        {t('decision.fullDossier', 'Full Dossier')}
                       </button>
                     )}
                   </div>
@@ -920,45 +922,45 @@ export const DecisionCenter: React.FC<DecisionCenterProps> = ({
                           <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
                             <div className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                               <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                              <span>Explainable Risk Decomposition (+Additive Weights)</span>
+                              <span>{t('decision.explainableRiskDecomp', 'Explainable Risk Decomposition (+Additive Weights)')}</span>
                             </div>
                             <div className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-800">
-                              Additive Sum: +{computedSum} / {decomp.totalScore} pts
+                              {t('decision.additiveSum', 'Additive Sum')}: +{computedSum} / {decomp.totalScore} pts
                             </div>
                           </div>
                           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-center">
                             <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 hover:border-indigo-200 transition-colors">
-                              <div className="text-[10px] font-bold text-slate-500">Financial Anomaly</div>
+                              <div className="text-[10px] font-bold text-slate-500">{t('decision.financialAnomaly', 'Financial Anomaly')}</div>
                               <div className="text-sm font-black text-rose-700 mt-0.5">
                                 +{decomp.financialAnomaly}
                               </div>
                             </div>
                             <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 hover:border-indigo-200 transition-colors">
-                              <div className="text-[10px] font-bold text-slate-500">Progress Mismatch</div>
+                              <div className="text-[10px] font-bold text-slate-500">{t('decision.progressMismatch', 'Progress Mismatch')}</div>
                               <div className="text-sm font-black text-amber-700 mt-0.5">
                                 +{decomp.progressMismatch}
                               </div>
                             </div>
                             <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 hover:border-indigo-200 transition-colors">
-                              <div className="text-[10px] font-bold text-slate-500">Milestone Delay</div>
+                              <div className="text-[10px] font-bold text-slate-500">{t('decision.milestoneDelay', 'Milestone Delay')}</div>
                               <div className="text-sm font-black text-slate-800 mt-0.5">
                                 +{decomp.delayPoints}
                               </div>
                             </div>
                             <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 hover:border-indigo-200 transition-colors">
-                              <div className="text-[10px] font-bold text-slate-500">Contractor Risk</div>
+                              <div className="text-[10px] font-bold text-slate-500">{t('decision.contractorRisk', 'Contractor Risk')}</div>
                               <div className="text-sm font-black text-slate-800 mt-0.5">
                                 +{decomp.contractorRisk}
                               </div>
                             </div>
                             <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 hover:border-indigo-200 transition-colors">
-                              <div className="text-[10px] font-bold text-slate-500">Duplicate Probability</div>
+                              <div className="text-[10px] font-bold text-slate-500">{t('decision.duplicateProbability', 'Duplicate Probability')}</div>
                               <div className="text-sm font-black text-slate-800 mt-0.5">
                                 +{decomp.duplicateProbability}
                               </div>
                             </div>
                             <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 hover:border-indigo-200 transition-colors">
-                              <div className="text-[10px] font-bold text-slate-500">Data Quality</div>
+                              <div className="text-[10px] font-bold text-slate-500">{t('decision.dataQuality', 'Data Quality')}</div>
                               <div className="text-sm font-black text-slate-800 mt-0.5">
                                 +{decomp.dataQualityRisk}
                               </div>
@@ -1035,7 +1037,7 @@ export const DecisionCenter: React.FC<DecisionCenterProps> = ({
                       }`}
                     >
                       <ClipboardList className="w-3.5 h-3.5" />
-                      <span>{isInspectionAssigned ? '📋 Inspection Ordered ✓' : 'Assign Inspection'}</span>
+                      <span>{isInspectionAssigned ? `📋 ${t('decision.inspectionAssigned', 'Inspection Ordered')} ✓` : t('decision.assignInspection', 'Assign Inspection')}</span>
                     </button>
 
                     <button
@@ -1043,7 +1045,7 @@ export const DecisionCenter: React.FC<DecisionCenterProps> = ({
                       className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors flex items-center gap-1 cursor-pointer"
                     >
                       <FileText className="w-3.5 h-3.5" />
-                      <span>Request Documents</span>
+                      <span>{t('phrases.Request Documents', 'Request Documents')}</span>
                     </button>
 
                     <button
@@ -1055,7 +1057,7 @@ export const DecisionCenter: React.FC<DecisionCenterProps> = ({
                       }`}
                     >
                       <AlertOctagon className="w-3.5 h-3.5" />
-                      <span>{isFrozen ? '⛔ Payment Frozen ✓' : 'Freeze Payment'}</span>
+                      <span>{isFrozen ? `⛔ ${t('decision.paymentFrozen', 'Payment Frozen')} ✓` : t('decision.freezePayment', 'Freeze Payment')}</span>
                     </button>
 
                     <button
@@ -1066,7 +1068,7 @@ export const DecisionCenter: React.FC<DecisionCenterProps> = ({
                           : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                       }`}
                     >
-                      <span>{isNoticeIssued ? '⚠️ Notice Dispatched ✓' : 'Generate Notice'}</span>
+                      <span>{isNoticeIssued ? `⚠️ ${t('decision.noticeIssued', 'Notice Dispatched')} ✓` : t('decision.generateNotice', 'Generate Notice')}</span>
                     </button>
 
                     <button
@@ -1077,7 +1079,7 @@ export const DecisionCenter: React.FC<DecisionCenterProps> = ({
                           : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800'
                       }`}
                     >
-                      <span>{isResolved ? '✅ Case Resolved ✓' : 'Resolve Case'}</span>
+                      <span>{isResolved ? `✅ ${t('decision.caseResolved', 'Case Resolved')} ✓` : t('decision.resolveCase', 'Resolve Case')}</span>
                     </button>
                   </div>
                 </div>

@@ -30,6 +30,8 @@ import { auth, db } from '../../firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { PlatformRole, canMakeDecisions } from '../../types';
+import { useTranslation } from '../../i18n/LanguageContext';
+import { LanguageSelector } from '../shared/LanguageSelector';
 
 // Maximum failed login attempts before temporary lockout
 const MAX_LOGIN_ATTEMPTS = 7;
@@ -215,6 +217,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   initialRole = 'admin',
   initialMode = 'signin',
 }) => {
+  const { t } = useTranslation();
   // Mode: 'signin' or 'signup'
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>(initialMode);
 
@@ -629,7 +632,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         <div className="absolute -bottom-24 right-1/4 w-[450px] h-[300px] bg-blue-600/10 dark:bg-blue-600/15 rounded-full blur-3xl" />
       </div>
 
-      {/* Subtle top navigation controls (Return & Theme Toggle) */}
+      {/* Subtle top navigation controls (Return, Language Selector & Theme Toggle) */}
       <div className="absolute top-4 sm:top-6 left-4 sm:left-6 right-4 sm:right-6 flex items-center justify-between z-20 pointer-events-auto">
         {onExplorePublic ? (
           <button
@@ -642,25 +645,28 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             }`}
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Return to Home</span>
+            <span>{t('auth.explorePublic', 'Return to Home')}</span>
           </button>
         ) : (
           <div />
         )}
 
-        <button
-          type="button"
-          onClick={toggleTheme}
-          className={`p-2 rounded-xl border transition-all cursor-pointer backdrop-blur-md ${
-            isDarkMode
-              ? 'bg-slate-900/80 border-slate-800 text-amber-400 hover:bg-slate-800'
-              : 'bg-white/90 border-slate-200 text-slate-700 hover:bg-slate-100 shadow-2xs'
-          }`}
-          aria-label="Toggle theme"
-          title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-        >
-          {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-        </button>
+        <div className="flex items-center gap-2">
+          <LanguageSelector variant="header" />
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className={`p-2 rounded-xl border transition-all cursor-pointer backdrop-blur-md ${
+              isDarkMode
+                ? 'bg-slate-900/80 border-slate-800 text-amber-400 hover:bg-slate-800'
+                : 'bg-white/90 border-slate-200 text-slate-700 hover:bg-slate-100 shadow-2xs'
+            }`}
+            aria-label="Toggle theme"
+            title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+        </div>
       </div>
 
       {/* Brand & Authority Header Info */}
@@ -676,7 +682,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           <span className="text-slate-300 dark:text-slate-700">•</span>
           <span className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-slate-600 dark:text-slate-400">Statutory Oversight Portal</span>
+            <span className="text-slate-600 dark:text-slate-400">{t('landing.statutoryOversight', 'Statutory Oversight Portal')}</span>
           </span>
         </div>
 
@@ -687,7 +693,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           </span>
         </h1>
         <p className={`text-xs sm:text-sm font-medium leading-relaxed max-w-md mx-auto ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-          AI-Powered Fund Monitoring, Work Inspection &amp; Statutory Risk Intelligence
+          {t('landing.subtitle', 'AI-Powered Fund Monitoring, Work Inspection & Statutory Risk Intelligence')}
         </p>
       </motion.div>
 
@@ -720,7 +726,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             }`}
           >
             <LogIn className="w-4 h-4" />
-            <span>Sign In</span>
+            <span>{t('auth.signInTitle', 'Sign In')}</span>
           </button>
           <button
             type="button"
@@ -737,7 +743,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             }`}
           >
             <UserPlus className="w-4 h-4" />
-            <span>Create Account</span>
+            <span>{t('auth.createAccountTitle', 'Create Account')}</span>
           </button>
         </div>
 
@@ -749,12 +755,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-bold tracking-tight">
-                {authMode === 'signin' ? 'Authorized Officer Sign In' : 'Create Officer Account'}
+                {authMode === 'signin' ? t('auth.signInTitle', 'Authorized Officer Sign In') : t('auth.createAccountTitle', 'Create Officer Account')}
               </h2>
               <p className={`text-xs mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 {authMode === 'signin'
-                  ? 'Enter credentials to access surveillance console'
-                  : 'Register for statutory MPLADS oversight credentials'}
+                  ? t('auth.signInSubtitle', 'Enter credentials to access surveillance console')
+                  : t('auth.createAccountSubtitle', 'Register for statutory MPLADS oversight credentials')}
               </p>
             </div>
           </div>
@@ -804,7 +810,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   isDarkMode ? 'text-slate-300' : 'text-slate-700'
                 }`}
               >
-                OFFICIAL EMAIL OR NIC USERNAME <span className="text-rose-500">*</span>
+                {t('auth.emailLabel', 'OFFICIAL EMAIL OR NIC USERNAME')} <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
                 <Mail
@@ -817,7 +823,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   type="email"
                   autoComplete="email"
                   disabled={isLoading || lockoutSeconds > 0}
-                  placeholder="admin@mplads.vigilai or officer@nic.in"
+                  placeholder={t('auth.emailPlaceholder', 'admin@mplads.vigilai or officer@nic.in')}
                   {...registerLogin('email')}
                   className={`w-full pl-11 pr-4 py-3.5 rounded-xl text-sm font-normal transition-all border focus:outline-none focus:ring-2 ${
                     loginErrors.email
@@ -845,14 +851,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     isDarkMode ? 'text-slate-300' : 'text-slate-700'
                   }`}
                 >
-                  PASSWORD <span className="text-rose-500">*</span>
+                  {t('auth.passwordLabel', 'PASSWORD')} <span className="text-rose-500">*</span>
                 </label>
                 <button
                   type="button"
                   onClick={() => setIsForgotPasswordOpen(true)}
                   className="text-xs font-semibold text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 transition-colors cursor-pointer hover:underline"
                 >
-                  Forgot password?
+                  {t('phrases.Forgot password?', 'Forgot password?')}
                 </button>
               </div>
               <div className="relative">
@@ -866,7 +872,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   disabled={isLoading || lockoutSeconds > 0}
-                  placeholder="••••••••••••"
+                  placeholder={t('auth.passwordPlaceholder', '••••••••••••')}
                   {...registerLogin('password')}
                   className={`w-full pl-11 pr-12 py-3.5 rounded-xl text-sm font-normal transition-all border focus:outline-none focus:ring-2 ${
                     loginErrors.password
@@ -895,22 +901,73 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               )}
             </div>
 
-            {/* Quick Demo Credentials Info Pill */}
-            <div className="flex items-center justify-between p-3 rounded-xl border border-dashed border-cyan-200 bg-cyan-50/60 dark:border-cyan-900/60 dark:bg-cyan-950/25 text-xs">
-              <div className="flex items-center gap-2 truncate">
-                <Sparkles className="w-3.5 h-3.5 text-cyan-500 shrink-0" />
-                <div className="truncate">
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">Demo Officer: </span>
-                  <code className="font-mono text-cyan-700 dark:text-cyan-300 font-medium">admin@mplads.vigilai</code>
+            {/* Quick Demo Credentials Info Pill & Role Selectors */}
+            <div className="p-3 rounded-xl border border-dashed border-cyan-200 bg-cyan-50/60 dark:border-cyan-900/60 dark:bg-cyan-950/25 text-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300 text-[11px] uppercase tracking-wider">
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-500 shrink-0" />
+                  <span>{t('auth.demoAccountsTitle', 'Select Authorized Role & Demo Account')}</span>
                 </div>
+                <button
+                  type="button"
+                  onClick={fillDemoCredentials}
+                  className="px-2 py-0.5 rounded bg-cyan-500 hover:bg-cyan-600 text-white font-semibold text-[10px] transition-all cursor-pointer shadow-2xs"
+                >
+                  {t('phrases.Autofill', 'Autofill')}
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={fillDemoCredentials}
-                className="px-2.5 py-1 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white font-semibold text-[11px] transition-all cursor-pointer shrink-0 shadow-2xs"
-              >
-                Autofill
-              </button>
+
+              {/* Quick 1-click Role Selector Pills */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setValueLogin('email', 'minister@mplads.vigilai', { shouldValidate: true });
+                    setValueLogin('password', 'VigilAI@2026', { shouldValidate: true });
+                    setValueLogin('role', 'minister');
+                  }}
+                  className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/50 hover:bg-amber-50 dark:hover:bg-amber-950/30 text-amber-800 dark:text-amber-300 font-semibold text-left transition-colors cursor-pointer"
+                >
+                  <div className="font-bold">👑 {t('auth.executiveClearance', 'Minister')}</div>
+                  <div className="text-[9px] text-slate-500 font-mono truncate">minister@...</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setValueLogin('email', 'district@mplads.vigilai', { shouldValidate: true });
+                    setValueLogin('password', 'VigilAI@2026', { shouldValidate: true });
+                    setValueLogin('role', 'district');
+                  }}
+                  className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-900/50 hover:bg-blue-50 dark:hover:bg-blue-950/30 text-blue-800 dark:text-blue-300 font-semibold text-left transition-colors cursor-pointer"
+                >
+                  <div className="font-bold">🏛️ {t('auth.districtAuthority', 'Collector')}</div>
+                  <div className="text-[9px] text-slate-500 font-mono truncate">district@...</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setValueLogin('email', 'citizen@mplads.vigilai', { shouldValidate: true });
+                    setValueLogin('password', 'VigilAI@2026', { shouldValidate: true });
+                    setValueLogin('role', 'citizen');
+                  }}
+                  className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-900/50 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 font-semibold text-left transition-colors cursor-pointer"
+                >
+                  <div className="font-bold">👁️ {t('auth.generalCitizen', 'Citizen')}</div>
+                  <div className="text-[9px] text-slate-500 font-mono truncate">citizen@...</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setValueLogin('email', 'admin@mplads.vigilai', { shouldValidate: true });
+                    setValueLogin('password', 'VigilAI@2026', { shouldValidate: true });
+                    setValueLogin('role', 'admin');
+                  }}
+                  className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-cyan-200 dark:border-cyan-900/50 hover:bg-cyan-50 dark:hover:bg-cyan-950/30 text-cyan-800 dark:text-cyan-300 font-semibold text-left transition-colors cursor-pointer"
+                >
+                  <div className="font-bold">⚙️ {t('auth.superAdmin', 'Admin')}</div>
+                  <div className="text-[9px] text-slate-500 font-mono truncate">admin@...</div>
+                </button>
+              </div>
             </div>
 
             {/* Remember my login on this device */}
@@ -931,7 +988,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     isDarkMode ? 'text-slate-300' : 'text-slate-700'
                   }`}
                 >
-                  Remember my login on this device
+                  {t('auth.rememberMe', 'Remember my login on this device')}
                 </span>
               </label>
             </div>
@@ -946,16 +1003,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               {isLoading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Signing In...</span>
+                  <span>{t('common.loading', 'Signing In...')}</span>
                 </>
               ) : lockoutSeconds > 0 ? (
                 <>
                   <Lock className="w-4 h-4" />
-                  <span>Account Locked ({lockoutSeconds}s)</span>
+                  <span>{t('phrases.Account Locked', 'Account Locked')} ({lockoutSeconds}s)</span>
                 </>
               ) : (
                 <>
-                  <span>Sign In &amp; Redirect to Home</span>
+                  <span>{t('auth.submitSignIn', 'Sign In & Redirect to Home')}</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -964,7 +1021,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             {/* Switch to Create Account link */}
             <div className="pt-2 text-center">
               <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                Don't have an official account yet?{' '}
+                {t('auth.createAccountPrompt', "Don't have an official account yet?")}{' '}
                 <button
                   type="button"
                   onClick={() => {
@@ -973,7 +1030,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   }}
                   className="font-bold text-cyan-600 dark:text-cyan-400 hover:underline cursor-pointer"
                 >
-                  Create Account
+                  {t('auth.createAccountTitle', 'Create Account')}
                 </button>
               </p>
             </div>
@@ -999,7 +1056,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     isDarkMode ? 'text-slate-300' : 'text-slate-700'
                   }`}
                 >
-                  FULL NAME <span className="text-rose-500">*</span>
+                  {t('auth.fullName', 'FULL NAME')} <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
                   <User
@@ -1035,7 +1092,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     isDarkMode ? 'text-slate-300' : 'text-slate-700'
                   }`}
                 >
-                  OFFICIAL EMAIL <span className="text-rose-500">*</span>
+                  {t('auth.emailLabel', 'OFFICIAL EMAIL')} <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
                   <Mail
@@ -1074,7 +1131,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     isDarkMode ? 'text-slate-300' : 'text-slate-700'
                   }`}
                 >
-                  OFFICIAL ROLE <span className="text-rose-500">*</span>
+                  {t('phrases.Role', 'OFFICIAL ROLE')} <span className="text-rose-500">*</span>
                 </label>
                 <select
                   id="register-role-select"
@@ -1086,10 +1143,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                       : 'bg-slate-50 border-slate-200 text-slate-900 focus:bg-white focus:ring-blue-500/20 focus:border-blue-500'
                   }`}
                 >
-                  <option value="nodal_officer">District Nodal Officer (Collectorate)</option>
-                  <option value="analyst">CAG / Senior Audit Analyst</option>
-                  <option value="mp">Hon. Member of Parliament</option>
-                  <option value="admin">Chief Vigilance Administrator</option>
+                  <option value="nodal_officer">{t('auth.nodalOfficer', 'District Nodal Officer (Collectorate)')}</option>
+                  <option value="analyst">{t('auth.auditor', 'CAG / Senior Audit Analyst')}</option>
+                  <option value="mp">{t('auth.parliamentarian', 'Hon. Member of Parliament')}</option>
+                  <option value="admin">{t('auth.superAdmin', 'Chief Vigilance Administrator')}</option>
                 </select>
               </div>
 
@@ -1101,7 +1158,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     isDarkMode ? 'text-slate-300' : 'text-slate-700'
                   }`}
                 >
-                  DEPARTMENT / CONSTITUENCY <span className="text-rose-500">*</span>
+                  {t('auth.department', 'DEPARTMENT / CONSTITUENCY')} <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
                   <Building
@@ -1140,7 +1197,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     isDarkMode ? 'text-slate-300' : 'text-slate-700'
                   }`}
                 >
-                  CREATE PASSWORD <span className="text-rose-500">*</span>
+                  {t('auth.passwordLabel', 'CREATE PASSWORD')} <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
                   <Lock
@@ -1183,7 +1240,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     isDarkMode ? 'text-slate-300' : 'text-slate-700'
                   }`}
                 >
-                  CONFIRM PASSWORD <span className="text-rose-500">*</span>
+                  {t('auth.confirmPassword', 'CONFIRM PASSWORD')} <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
                   <Lock
@@ -1253,7 +1310,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     isDarkMode ? 'text-slate-300' : 'text-slate-700'
                   }`}
                 >
-                  I certify that I am authorized personnel under MoSPI vigilance and GFR Rule 144.
+                  {t('auth.undertakingText', 'I certify that I am authorized personnel under MoSPI vigilance and GFR Rule 144.')}
                 </span>
               </label>
               {registerErrors.undertaking && (
@@ -1271,11 +1328,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               {isLoading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Creating Account...</span>
+                  <span>{t('common.loading', 'Creating Account...')}</span>
                 </>
               ) : (
                 <>
-                  <span>Create Account &amp; Proceed to Home</span>
+                  <span>{t('auth.submitRegister', 'Create Account & Proceed to Home')}</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -1284,7 +1341,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             {/* Switch to Sign In link */}
             <div className="pt-2 text-center">
               <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                Already registered?{' '}
+                {t('auth.alreadyHaveAccount', 'Already registered?')}{' '}
                 <button
                   type="button"
                   onClick={() => {
@@ -1293,7 +1350,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   }}
                   className="font-bold text-cyan-600 dark:text-cyan-400 hover:underline cursor-pointer"
                 >
-                  Sign in to your console
+                  {t('auth.signInTitle', 'Sign in to your console')}
                 </button>
               </p>
             </div>
@@ -1304,7 +1361,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         <div className="pt-3.5 mt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-start gap-2.5 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
           <Shield className="w-4 h-4 text-cyan-500 shrink-0 mt-0.5" />
           <span>
-            Statutory Notice: For authorized MoSPI officers and parliamentary auditors under Rule 144 of GFR 2017. All activities are cryptographically verified.
+            {t('auth.loginNotice', 'Statutory Notice: For authorized MoSPI officers and parliamentary auditors under Rule 144 of GFR 2017. All activities are cryptographically verified.')}
           </span>
         </div>
       </motion.div>
