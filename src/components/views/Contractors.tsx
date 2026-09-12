@@ -18,6 +18,7 @@ import {
   Info,
 } from 'lucide-react';
 import { MPLADProject, ContractorProfile } from '../../types';
+import { useTranslation } from '../../i18n/LanguageContext';
 
 interface ContractorsProps {
   projects: MPLADProject[];
@@ -53,6 +54,7 @@ export const Contractors: React.FC<ContractorsProps> = ({
   contractorProfiles = [],
   onInspectProject,
 }) => {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTier, setSelectedTier] = useState<string>('All');
   const [selectedContractorId, setSelectedContractorId] = useState<string>('');
@@ -277,39 +279,39 @@ export const Contractors: React.FC<ContractorsProps> = ({
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-md bg-indigo-50 border border-indigo-200 text-indigo-700 text-[11px] font-bold uppercase tracking-wider">
-                Vendor Oversight
+                {t('Vendor Oversight', 'Vendor Oversight')}
               </span>
               <span className="text-slate-300">•</span>
               <span className="text-slate-500 text-xs font-medium">
-                Contractor Performance &amp; Delivery Tracking
+                {t('Contractor Performance & Delivery Tracking', 'Contractor Performance & Delivery Tracking')}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              Contractor Performance Registry
+              {t('Contractor Performance & Registry', 'Contractor Performance Registry')}
             </h1>
             <p className="text-xs sm:text-sm text-slate-500">
-              Objective delivery track record, milestone timeliness, and procurement transparency ratings across all executing vendors.
+              {t('Performance tracking, risk indicators, single-bid rates and portfolio analysis across government contractors.', 'Objective delivery track record, milestone timeliness, and procurement transparency ratings across all executing vendors.')}
             </p>
           </div>
 
           {/* Quick macro metrics */}
           <div className="flex flex-wrap items-center gap-3">
             <div className="px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200/80 text-xs">
-              <span className="text-slate-500 block text-[10px] uppercase font-bold">Total Vendors</span>
+              <span className="text-slate-500 block text-[10px] uppercase font-bold">{t('Total Vendors', 'Total Vendors')}</span>
               <strong className="text-slate-900 text-sm font-bold font-mono">
-                {macroStats.totalContractors} Entities
+                {macroStats.totalContractors} {t('Entities', 'Entities')}
               </strong>
             </div>
             <div className="px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200/80 text-xs">
-              <span className="text-slate-500 block text-[10px] uppercase font-bold">Total Allocation</span>
+              <span className="text-slate-500 block text-[10px] uppercase font-bold">{t('Total Allocation', 'Total Allocation')}</span>
               <strong className="text-slate-900 text-sm font-bold font-mono">
-                ₹{macroStats.totalAwardedCr} Cr
+                ₹{macroStats.totalAwardedCr} {t('common.crores', 'Cr')}
               </strong>
             </div>
             <div className="px-3.5 py-2 rounded-xl bg-amber-50 border border-amber-200 text-xs">
-              <span className="text-amber-700 block text-[10px] uppercase font-bold">Review Recommended</span>
+              <span className="text-amber-700 block text-[10px] uppercase font-bold">{t('Review Recommended', 'Review Recommended')}</span>
               <strong className="text-amber-900 text-sm font-bold font-mono">
-                {macroStats.highRiskCount} Vendors
+                {macroStats.highRiskCount} {t('Vendors', 'Vendors')}
               </strong>
             </div>
           </div>
@@ -324,7 +326,7 @@ export const Contractors: React.FC<ContractorsProps> = ({
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search vendor by name, GSTIN, or director..."
+              placeholder={t('Search vendor by name, GSTIN, or director...', 'Search vendor by name, GSTIN, or director...')}
               className="w-full pl-9 pr-3.5 py-2 text-xs rounded-xl bg-slate-50/80 border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all font-medium text-slate-800 placeholder:text-slate-400"
             />
           </div>
@@ -336,11 +338,11 @@ export const Contractors: React.FC<ContractorsProps> = ({
               onChange={(e) => setSelectedTier(e.target.value)}
               className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50/80 border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all font-medium text-slate-700"
             >
-              <option value="All">All Performance Tiers</option>
-              <option value="High Performer">High Performer (4.2★ - 5.0★)</option>
-              <option value="Satisfactory">Satisfactory (3.5★ - 4.1★)</option>
-              <option value="Review Advised">Review Advised (Delays / Single-Bid)</option>
-              <option value="High Risk">High Risk / Active Review</option>
+              <option value="All">{t('All Performance Tiers', 'All Performance Tiers')}</option>
+              <option value="High Performer">{t('High Performer', 'High Performer')} (4.2★ - 5.0★)</option>
+              <option value="Satisfactory">{t('Satisfactory', 'Satisfactory')} (3.5★ - 4.1★)</option>
+              <option value="Review Advised">{t('Review Advised', 'Review Advised')} (Delays / Single-Bid)</option>
+              <option value="High Risk">{t('High Risk / Active Review', 'High Risk / Active Review')}</option>
             </select>
           </div>
 
@@ -351,10 +353,10 @@ export const Contractors: React.FC<ContractorsProps> = ({
               onChange={(e) => setSortBy(e.target.value as any)}
               className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50/80 border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all font-medium text-slate-700"
             >
-              <option value="works">Sort by: Projects Count (High to Low)</option>
-              <option value="value">Sort by: Contract Outlay (High to Low)</option>
-              <option value="rating">Sort by: Performance Rating</option>
-              <option value="completion">Sort by: Average Completion Rate</option>
+              <option value="works">{t('Sort by: Projects Count (High to Low)', 'Sort by: Projects Count (High to Low)')}</option>
+              <option value="value">{t('Sort by: Contract Outlay (High to Low)', 'Sort by: Contract Outlay (High to Low)')}</option>
+              <option value="rating">{t('Sort by: Performance Rating', 'Sort by: Performance Rating')}</option>
+              <option value="completion">{t('Sort by: Average Completion Rate', 'Sort by: Average Completion Rate')}</option>
             </select>
           </div>
 
@@ -366,7 +368,7 @@ export const Contractors: React.FC<ContractorsProps> = ({
                 setSelectedTier('All');
                 setSortBy('works');
               }}
-              title="Reset Filters"
+              title={t('common.reset', 'Reset Filters')}
               className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer w-full sm:w-auto flex items-center justify-center"
             >
               <RotateCcw className="w-4 h-4" />

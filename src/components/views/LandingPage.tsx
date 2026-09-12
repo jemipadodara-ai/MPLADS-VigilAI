@@ -214,10 +214,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              What MPLADS-VigilAI Does
+              {t('What MPLADS-VigilAI Does', 'What MPLADS-VigilAI Does')}
             </h2>
             <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">
-              MPLADS-VigilAI analyzes government project data to identify unusual spending, delays, low progress and other risk indicators.
+              {t('MPLADS-VigilAI analyzes government project data to identify unusual spending, delays, low progress and other risk indicators.', 'MPLADS-VigilAI analyzes government project data to identify unusual spending, delays, low progress and other risk indicators.')}
             </p>
           </div>
 
@@ -228,9 +228,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center">
                 <AlertTriangle className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-slate-900">Risk Detection</h3>
+              <h3 className="text-base font-bold text-slate-900">{t('Risk Detection', 'Risk Detection')}</h3>
               <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                Find projects with unusual or concerning patterns.
+                {t('Find projects with unusual or concerning patterns.', 'Find projects with unusual or concerning patterns.')}
               </p>
             </div>
 
@@ -239,9 +239,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
                 <FileText className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-slate-900">Risk Explanation</h3>
+              <h3 className="text-base font-bold text-slate-900">{t('Risk Explanation', 'Risk Explanation')}</h3>
               <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                See exactly why a project has been flagged.
+                {t('See exactly why a project has been flagged.', 'See exactly why a project has been flagged.')}
               </p>
             </div>
 
@@ -250,9 +250,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center">
                 <Activity className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-slate-900">Project Monitoring</h3>
+              <h3 className="text-base font-bold text-slate-900">{t('Project Monitoring', 'Project Monitoring')}</h3>
               <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                Compare spending, progress and project status.
+                {t('Compare spending, progress and project status.', 'Compare spending, progress and project status.')}
               </p>
             </div>
 
@@ -261,9 +261,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
                 <FileDown className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-slate-900">Data Export</h3>
+              <h3 className="text-base font-bold text-slate-900">{t('Data Export', 'Data Export')}</h3>
               <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                Download detailed project information for further review.
+                {t('Download detailed project information for further review.', 'Download detailed project information for further review.')}
               </p>
             </div>
           </div>
@@ -275,13 +275,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-14 space-y-2">
             <span className="text-xs font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">
-              Platform Architecture
+              {t('Platform Architecture', 'Platform Architecture')}
             </span>
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight pt-1">
-              How the platform works
+              {t('How the platform works', 'How the platform works')}
             </h2>
             <p className="text-sm sm:text-base text-slate-600 font-normal">
-              From project data to clear risk information.
+              {t('From project data to clear risk information.', 'From project data to clear risk information.')}
             </p>
           </div>
 
@@ -293,10 +293,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 1
               </div>
               <div className="space-y-1">
-                <div className="text-xs font-bold uppercase tracking-wider text-indigo-600">Stage 1</div>
-                <h3 className="text-base font-bold text-slate-900">PROJECT DATA</h3>
+                <div className="text-xs font-bold uppercase tracking-wider text-indigo-600">{t('Stage 1', 'Stage 1')}</div>
+                <h3 className="text-base font-bold text-slate-900">{t('PROJECT DATA', 'PROJECT DATA')}</h3>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Project information, financial data, progress data, contractor details.
+                  {t('Project information, financial data, progress data, contractor details.', 'Project information, financial data, progress data, contractor details.')}
                 </p>
               </div>
             </div>
@@ -311,10 +311,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 2
               </div>
               <div className="space-y-1">
-                <div className="text-xs font-bold uppercase tracking-wider text-indigo-600">Stage 2</div>
-                <h3 className="text-base font-bold text-slate-900">DATA CHECK</h3>
+                <div className="text-xs font-bold uppercase tracking-wider text-indigo-600">{t('Stage 2', 'Stage 2')}</div>
+                <h3 className="text-base font-bold text-slate-900">{t('DATA CHECK', 'DATA CHECK')}</h3>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Clean and organize project information.
+                  {t('Clean and organize project information.', 'Clean and organize project information.')}
                 </p>
               </div>
             </div>
@@ -329,10 +329,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 3
               </div>
               <div className="space-y-1">
-                <div className="text-xs font-bold uppercase tracking-wider text-indigo-600">Stage 3</div>
-                <h3 className="text-base font-bold text-slate-900">RISK ENGINE</h3>
+                <div className="text-xs font-bold uppercase tracking-wider text-indigo-600">{t('Stage 3', 'Stage 3')}</div>
+                <h3 className="text-base font-bold text-slate-900">{t('RISK ENGINE', 'RISK ENGINE')}</h3>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Check for cost overrun, project delay, low progress, unusual spending, and other available risk indicators.
+                  {t('Check for cost overrun, project delay, low progress, unusual spending, and other available risk indicators.', 'Check for cost overrun, project delay, low progress, unusual spending, and other available risk indicators.')}
                 </p>
               </div>
             </div>
@@ -347,10 +347,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 4
               </div>
               <div className="space-y-1">
-                <div className="text-xs font-bold uppercase tracking-wider text-indigo-600">Stage 4</div>
-                <h3 className="text-base font-bold text-slate-900">EXPLAINABLE RISK</h3>
+                <div className="text-xs font-bold uppercase tracking-wider text-indigo-600">{t('Stage 4', 'Stage 4')}</div>
+                <h3 className="text-base font-bold text-slate-900">{t('EXPLAINABLE RISK', 'EXPLAINABLE RISK')}</h3>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Generate Risk Level, Risk Score, Risk Reasons, and Supporting Evidence.
+                  {t('Generate Risk Level, Risk Score, Risk Reasons, and Supporting Evidence.', 'Generate Risk Level, Risk Score, Risk Reasons, and Supporting Evidence.')}
                 </p>
               </div>
             </div>
@@ -365,10 +365,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 5
               </div>
               <div className="space-y-1">
-                <div className="text-xs font-bold uppercase tracking-wider text-emerald-600">Stage 5</div>
-                <h3 className="text-base font-bold text-slate-900">PROJECT REVIEW</h3>
+                <div className="text-xs font-bold uppercase tracking-wider text-emerald-600">{t('Stage 5', 'Stage 5')}</div>
+                <h3 className="text-base font-bold text-slate-900">{t('PROJECT REVIEW', 'PROJECT REVIEW')}</h3>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  View complete project details, filter projects, compare risks, and export project data.
+                  {t('View complete project details, filter projects, compare risks, and export project data.', 'View complete project details, filter projects, compare risks, and export project data.')}
                 </p>
               </div>
             </div>
@@ -380,10 +380,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <section className="py-16 sm:py-20 bg-white border-b border-slate-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            Why It Matters
+            {t('Why It Matters', 'Why It Matters')}
           </h2>
           <p className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed font-normal">
-            Instead of checking every project manually, the platform highlights projects with unusual patterns so they can be reviewed first.
+            {t('Instead of checking every project manually, the platform highlights projects with unusual patterns so they can be reviewed first.', 'Instead of checking every project manually, the platform highlights projects with unusual patterns so they can be reviewed first.')}
           </p>
 
           <div className="pt-4 flex justify-center">
@@ -391,7 +391,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               onClick={handleGoToProjects}
               className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm sm:text-base font-bold shadow-xs transition-all cursor-pointer"
             >
-              <span>View Project Risks</span>
+              <span>{t('View Project Risks', 'View Project Risks')}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -404,10 +404,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-800">MPLADS-VigilAI</span>
             <span>•</span>
-            <span>Government Project Risk Monitoring</span>
+            <span>{t('Government Project Risk Monitoring', 'Government Project Risk Monitoring')}</span>
           </div>
           <div className="text-slate-400 text-[11px]">
-            Demonstration project data for monitoring public works.
+            {t('Demonstration project data for monitoring public works.', 'Demonstration project data for monitoring public works.')}
           </div>
         </div>
       </footer>

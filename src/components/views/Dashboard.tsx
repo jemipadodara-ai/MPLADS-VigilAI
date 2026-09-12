@@ -17,6 +17,7 @@ import { MPLADProject, ConstituencySummary } from '../../types';
 import { computeProjectRisk } from '../../utils/riskEngine';
 import { exportSingleProjectToWord } from '../../utils/docxExport';
 import { RiskBadge } from '../RiskBadge';
+import { useTranslation } from '../../i18n/LanguageContext';
 
 interface DashboardProps {
   projects: MPLADProject[];
@@ -36,6 +37,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onNavigateToProjects,
   onNavigateToContractors,
 }) => {
+  const { t } = useTranslation();
   const [exportingId, setExportingId] = useState<string | null>(null);
 
   // Highest-risk projects first
@@ -77,13 +79,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1.5 max-w-2xl">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold uppercase tracking-wider">
-            <span>Risk Monitoring</span>
+            <span>{t('Risk Monitoring', 'Risk Monitoring')}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            Government Project Risk Dashboard
+            {t('Government Project Risk Dashboard', 'Government Project Risk Dashboard')}
           </h1>
           <p className="text-sm text-slate-600 leading-relaxed font-normal">
-            See which government projects may need attention and understand the reasons behind each risk.
+            {t('See which government projects may need attention and understand the reasons behind each risk.', 'See which government projects may need attention and understand the reasons behind each risk.')}
           </p>
         </div>
 
@@ -95,7 +97,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold inline-flex items-center gap-2 transition-colors cursor-pointer"
             >
               <Users className="w-4 h-4 text-indigo-600" />
-              <span>Contractors</span>
+              <span>{t('Contractors', 'Contractors')}</span>
             </button>
           )}
 
@@ -104,7 +106,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             onClick={onNavigateToProjects}
             className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold shadow-xs inline-flex items-center gap-2 transition-all cursor-pointer"
           >
-            <span>Projects Registry</span>
+            <span>{t('Projects Registry', 'Projects Registry')}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
@@ -118,13 +120,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div>
             <div className="text-xs font-bold uppercase tracking-wider text-rose-600 flex items-center gap-1.5">
               <AlertTriangle className="w-4 h-4 text-rose-600" />
-              <span>Priority Monitoring</span>
+              <span>{t('Priority Monitoring', 'Priority Monitoring')}</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              Projects That Need Attention
+              {t('Projects That Need Attention', 'Projects That Need Attention')}
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 font-medium">
-              Projects exhibiting significant cost overruns, timeline delays, or low physical progress.
+              {t('Projects exhibiting significant cost overruns, timeline delays, or low physical progress.', 'Projects exhibiting significant cost overruns, timeline delays, or low physical progress.')}
             </p>
           </div>
 
@@ -132,7 +134,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             onClick={onNavigateToProjects}
             className="text-xs font-bold text-indigo-600 hover:text-indigo-700 inline-flex items-center gap-1 cursor-pointer self-start sm:self-auto"
           >
-            <span>View All Projects</span>
+            <span>{t('View All Projects', 'View All Projects')}</span>
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
@@ -162,7 +164,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <div className="flex items-center justify-between gap-2">
                     <RiskBadge level={risk.riskLevel} size="md" />
                     <div className="flex items-center gap-1 font-mono text-xs font-black text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg">
-                      <span>Score:</span>
+                      <span>{t('Score:', 'Score:')}</span>
                       <span className={isHigh ? 'text-rose-600 font-bold' : 'text-amber-600 font-bold'}>
                         {risk.riskScore}
                       </span>
@@ -187,7 +189,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5">
                     <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
                       <AlertTriangle className="w-3 h-3 text-slate-400" />
-                      <span>Why is this project flagged?</span>
+                      <span>{t('Why is this project flagged?', 'Why is this project flagged?')}</span>
                     </div>
                     <p className="text-xs font-semibold text-slate-800 leading-snug">
                       {risk.primaryReason}
@@ -197,36 +199,36 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   {/* Evidence Section */}
                   <div className="space-y-2 pt-1 border-t border-slate-100 text-xs">
                     <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      Risk Evidence
+                      {t('Risk Evidence', 'Risk Evidence')}
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
-                        <span className="text-[10px] text-slate-500 block">Approved</span>
+                        <span className="text-[10px] text-slate-500 block">{t('Approved', 'Approved')}</span>
                         <strong className="text-slate-900 font-mono text-xs">
-                          ₹{sanctioned.toFixed(2)} Lakh
+                          ₹{sanctioned.toFixed(2)} {t('common.lakhs', 'Lakh')}
                         </strong>
                       </div>
                       <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
-                        <span className="text-[10px] text-slate-500 block">Expenditure</span>
+                        <span className="text-[10px] text-slate-500 block">{t('Expenditure', 'Expenditure')}</span>
                         <strong className="text-slate-900 font-mono text-xs">
-                          ₹{spent.toFixed(2)} Lakh
+                          ₹{spent.toFixed(2)} {t('common.lakhs', 'Lakh')}
                         </strong>
                         {overrun > 0 && (
                           <span className="text-[10px] font-bold text-rose-600 block">
-                            +{overrun}% Overrun
+                            +{overrun}% {t('Overrun', 'Overrun')}
                           </span>
                         )}
                       </div>
                       <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
-                        <span className="text-[10px] text-slate-500 block">Progress</span>
+                        <span className="text-[10px] text-slate-500 block">{t('Progress', 'Progress')}</span>
                         <strong className="text-slate-900 font-mono text-xs">
-                          {progress}% Done
+                          {progress}% {t('Done', 'Done')}
                         </strong>
                       </div>
                       <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
-                        <span className="text-[10px] text-slate-500 block">Timeline</span>
+                        <span className="text-[10px] text-slate-500 block">{t('Timeline', 'Timeline')}</span>
                         <strong className="text-slate-900 text-xs">
-                          {risk.evidence.isDelayed ? `${risk.evidence.delayDays}d Overdue` : 'On Time'}
+                          {risk.evidence.isDelayed ? `${risk.evidence.delayDays}d ${t('Overdue', 'Overdue')}` : t('On Time', 'On Time')}
                         </strong>
                       </div>
                     </div>
@@ -240,10 +242,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     onClick={(e) => handleExportWord(e, project)}
                     disabled={exportingId === project.id}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
-                    title="Export Word report (.docx)"
+                    title={t('Export Word', 'Export Word report (.docx)')}
                   >
                     <FileDown className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>{exportingId === project.id ? 'Exporting...' : 'Export Word'}</span>
+                    <span>{exportingId === project.id ? t('Exporting...', 'Exporting...') : t('Export Word', 'Export Word')}</span>
                   </button>
 
                   <button
@@ -251,7 +253,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     onClick={() => onInspectProject(project)}
                     className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors cursor-pointer"
                   >
-                    <span>View Details</span>
+                    <span>{t('View Details', 'View Details')}</span>
                     <ArrowRight className="w-3 h-3" />
                   </button>
                 </div>
@@ -267,37 +269,37 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-2">
           <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-            Total Monitored Projects
+            {t('Total Monitored Projects', 'Total Monitored Projects')}
           </span>
           <div className="text-3xl font-black text-slate-900 font-mono">
             {totalWorksCount}
           </div>
-          <p className="text-xs text-slate-500 font-medium">In public works registry</p>
+          <p className="text-xs text-slate-500 font-medium">{t('In public works registry', 'In public works registry')}</p>
         </div>
 
         <div className="bg-white rounded-2xl border border-rose-200 p-5 shadow-2xs space-y-2 bg-rose-50/20">
           <span className="text-[11px] font-bold text-rose-700 uppercase tracking-wider block">
-            High-Risk Projects
+            {t('High-Risk Projects', 'High-Risk Projects')}
           </span>
           <div className="text-3xl font-black text-rose-600 font-mono">
             {highRiskProjects.length}
           </div>
-          <p className="text-xs text-rose-600 font-medium">Requiring immediate review</p>
+          <p className="text-xs text-rose-600 font-medium">{t('Requiring immediate review', 'Requiring immediate review')}</p>
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-2">
           <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-            Total Sanctioned Outlay
+            {t('Total Sanctioned Outlay', 'Total Sanctioned Outlay')}
           </span>
           <div className="text-3xl font-black text-slate-900 font-mono">
-            ₹{totalSanctionedCr} Cr
+            ₹{totalSanctionedCr} {t('common.crores', 'Cr')}
           </div>
-          <p className="text-xs text-slate-500 font-medium">Cumulative approved funds</p>
+          <p className="text-xs text-slate-500 font-medium">{t('Cumulative approved funds', 'Cumulative approved funds')}</p>
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-2">
           <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-            Average Physical Progress
+            {t('Average Physical Progress', 'Average Physical Progress')}
           </span>
           <div className="text-3xl font-black text-slate-900 font-mono">
             {totalWorksCount > 0
@@ -308,7 +310,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               : 0}
             %
           </div>
-          <p className="text-xs text-slate-500 font-medium">Across all active works</p>
+          <p className="text-xs text-slate-500 font-medium">{t('Across all active works', 'Across all active works')}</p>
         </div>
       </div>
 
@@ -319,10 +321,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div className="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h3 className="text-lg font-black text-slate-900 tracking-tight">
-              All Monitored Projects Ranked by Risk
+              {t('All Monitored Projects Ranked by Risk', 'All Monitored Projects Ranked by Risk')}
             </h3>
             <p className="text-xs text-slate-500 font-medium">
-              Ranked overview of projects with explicit risk reasons and current delivery status.
+              {t('Ranked overview of projects with explicit risk reasons and current delivery status.', 'Ranked overview of projects with explicit risk reasons and current delivery status.')}
             </p>
           </div>
 
@@ -330,7 +332,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             onClick={onNavigateToProjects}
             className="text-xs font-bold text-indigo-600 hover:text-indigo-700 inline-flex items-center gap-1 cursor-pointer"
           >
-            <span>Open Full Registry</span>
+            <span>{t('Open Full Registry', 'Open Full Registry')}</span>
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
@@ -339,12 +341,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] uppercase tracking-wider text-slate-500 font-bold">
-                <th className="py-3.5 px-4 sm:px-6">Project Title &amp; ID</th>
-                <th className="py-3.5 px-4">Risk Level &amp; Score</th>
-                <th className="py-3.5 px-4 min-w-[240px]">Main Risk Reason</th>
-                <th className="py-3.5 px-4">Approved / Spent</th>
-                <th className="py-3.5 px-4">Physical Progress</th>
-                <th className="py-3.5 px-4 text-right">Actions</th>
+                <th className="py-3.5 px-4 sm:px-6">{t('Project Title & ID', 'Project Title & ID')}</th>
+                <th className="py-3.5 px-4">{t('Risk Level & Score', 'Risk Level & Score')}</th>
+                <th className="py-3.5 px-4 min-w-[240px]">{t('Main Risk Reason', 'Main Risk Reason')}</th>
+                <th className="py-3.5 px-4">{t('Approved / Spent', 'Approved / Spent')}</th>
+                <th className="py-3.5 px-4">{t('Physical Progress', 'Physical Progress')}</th>
+                <th className="py-3.5 px-4 text-right">{t('Actions', 'Actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -434,7 +436,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             onClick={(e) => handleExportWord(e, project)}
                             disabled={exportingId === project.id}
                             className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-                            title="Export Word report"
+                            title={t('Export Word', 'Export Word report')}
                           >
                             <FileDown className="w-4 h-4" />
                           </button>
@@ -443,7 +445,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             onClick={() => onInspectProject(project)}
                             className="px-2.5 py-1 rounded-lg text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-600 hover:text-white transition-colors"
                           >
-                            Details
+                            {t('View Details', 'Details')}
                           </button>
                         </div>
                       </td>

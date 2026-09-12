@@ -63,8 +63,90 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
+  // Dynamic DOM text translator for universal coverage across all views and components
   useEffect(() => {
+    if (typeof document === 'undefined') return;
+
     document.documentElement.lang = language;
+
+    if (language === 'en') {
+      // Revert any translated nodes
+      document.querySelectorAll('[data-vigilai-orig]').forEach((el) => {
+        const orig = el.getAttribute('data-vigilai-orig');
+        if (orig) {
+          el.textContent = orig;
+          el.removeAttribute('data-vigilai-orig');
+        }
+      });
+      return;
+    }
+
+    const currentDict = TRANSLATIONS[language] || en;
+    const phraseMap = currentDict.phrases || {};
+    const textMap = new Map<string, string>();
+    for (const [k, v] of Object.entries(phraseMap)) {
+      if (k && v && typeof v === 'string') {
+        textMap.set(k.trim(), v.trim());
+      }
+    }
+
+    const translateNode = (node: Node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.nodeValue || '';
+        const trimmed = text.trim();
+        if (!trimmed || trimmed.length < 2) return;
+
+        if (textMap.has(trimmed)) {
+          const parent = node.parentElement;
+          if (parent) {
+            const tag = parent.tagName.toLowerCase();
+            if (['script', 'style', 'input', 'textarea', 'code', 'pre'].includes(tag)) return;
+            if (parent.isContentEditable) return;
+            if (!parent.hasAttribute('data-vigilai-orig')) {
+              parent.setAttribute('data-vigilai-orig', trimmed);
+            }
+          }
+          const translated = textMap.get(trimmed)!;
+          const leading = text.match(/^\s*/)?.[0] || '';
+          const trailing = text.match(/\s*$/)?.[0] || '';
+          node.nodeValue = leading + translated + trailing;
+        }
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        const el = node as HTMLElement;
+        const tag = el.tagName.toLowerCase();
+        if (['script', 'style', 'input', 'textarea', 'code', 'pre'].includes(tag)) return;
+        if (el.isContentEditable) return;
+        for (let i = 0; i < el.childNodes.length; i++) {
+          translateNode(el.childNodes[i]);
+        }
+      }
+    };
+
+    // Initial pass
+    translateNode(document.body);
+
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.type === 'childList') {
+          mutation.addedNodes.forEach((n) => translateNode(n));
+        } else if (mutation.type === 'characterData') {
+          const text = mutation.target.nodeValue?.trim() || '';
+          if (textMap.has(text) && textMap.get(text) !== text) {
+            translateNode(mutation.target);
+          }
+        }
+      }
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+
+    return () => {
+      observer.disconnect();
+    };
   }, [language]);
 
   const currentLanguageInfo = useMemo(() => {
