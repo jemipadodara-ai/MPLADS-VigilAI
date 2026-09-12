@@ -39,6 +39,10 @@ import { CitizenPortalView } from './components/views/CitizenPortalView';
 import { MinistryBriefingView } from './components/views/MinistryBriefingView';
 import { AiAssistantView } from './components/views/AiAssistantView';
 import { AdminUsersView } from './components/views/AdminUsersView';
+import { InspectorDashboardView } from './components/views/InspectorDashboardView';
+import { InspectorProjectView } from './components/views/InspectorProjectView';
+import { INSPECTOR_ASSIGNED_PROJECTS, INSPECTION_REPORTS, INSPECTOR_ACCOUNTS } from './data/inspectionData';
+import { InspectorAssignedProject, InspectionReport } from './types';
 import { useTranslation } from './i18n/LanguageContext';
 import { LanguageSelector } from './components/shared/LanguageSelector';
 
@@ -84,6 +88,77 @@ export function App() {
   const [contractors] = useState<ContractorProfile[]>(CONTRACTOR_PROFILES);
   const [constituencies] = useState<ConstituencySummary[]>(CONSTITUENCY_SUMMARIES);
 
+  // Inspector State
+  const [assignments, setAssignments] = useState<InspectorAssignedProject[]>(INSPECTOR_ASSIGNED_PROJECTS);
+  const [inspectionReports, setInspectionReports] = useState<InspectionReport[]>(INSPECTION_REPORTS);
+  const [selectedAssignment, setSelectedAssignment] = useState<InspectorAssignedProject | null>(null);
+
+  // Filtered assignments for logged in inspector (Strict RBAC)
+  const inspectorAssignments = useMemo(() => {
+    if (!currentUser || currentUser.role !== 'inspector') return assignments;
+    const inspectorAccount = INSPECTOR_ACCOUNTS[currentUser.email.toLowerCase()];
+    if (inspectorAccount && inspectorAccount.assignedProjectIds) {
+      return assignments.filter(
+        (a) =>
+          inspectorAccount.assignedProjectIds.includes(a.projectWorkCode) ||
+          inspectorAccount.assignedProjectIds.includes(a.projectId)
+      );
+    }
+    return assignments;
+  }, [assignments, currentUser]);
+
+  // Inspector submits an inspection report
+  const handleReportSubmit = useCallback((report: InspectionReport) => {
+    // 1. Update report registry
+    setInspectionReports((prev) => [report, ...prev.filter((r) => r.reportId !== report.reportId)]);
+
+    // 2. Update assignment status to 'Submitted'
+    setAssignments((prev) =>
+      prev.map((a) =>
+        a.assignmentId === report.assignmentId || a.projectId === report.projectId
+          ? { ...a, status: 'Submitted', reportId: report.reportId }
+          : a
+      )
+    );
+
+    // 3. Automatic risk score and progress update upon discrepancy
+    const discrepancy = Math.abs(report.physicalDiscrepancyPct || 0);
+    if (discrepancy > 5) {
+      const riskBonus = discrepancy > 20 ? 25 : discrepancy > 10 ? 15 : 8;
+      setRawProjects((prev) =>
+        prev.map((p) => {
+          if (p.id === report.projectId || p.workCode === report.projectWorkCode) {
+            const currentRisk = p.overallRiskScore || 50;
+            const updatedRisk = Math.min(100, currentRisk + riskBonus);
+            const updatedLevel =
+              updatedRisk >= 80 ? 'Critical' : updatedRisk >= 60 ? 'High' : updatedRisk >= 40 ? 'Medium' : 'Low';
+            return {
+              ...p,
+              overallRiskScore: updatedRisk,
+              riskLevel: updatedLevel as any,
+              completionPercentage: report.actualPhysicalPct,
+              notes: `${p.notes ? p.notes + ' | ' : ''}Field verified by ${report.inspectorName}: actual physical ${report.actualPhysicalPct}%, discrepancy ${report.physicalDiscrepancyPct}%. Verdict: ${report.verdict}.`,
+            };
+          }
+          return p;
+        })
+      );
+    }
+  }, []);
+
+  // Officer actions on Inspector Reports
+  const handleRequestReInspection = useCallback((reportId: string) => {
+    setInspectionReports((prev) =>
+      prev.map((r) => (r.reportId === reportId ? { ...r, officerReviewStatus: 'Re-inspection Requested' } : r))
+    );
+  }, []);
+
+  const handleEscalateReport = useCallback((reportId: string) => {
+    setInspectionReports((prev) =>
+      prev.map((r) => (r.reportId === reportId ? { ...r, officerReviewStatus: 'Escalated' } : r))
+    );
+  }, []);
+
   // Check server session on mount
   useEffect(() => {
     fetch('/api/auth/me')
@@ -99,11 +174,15 @@ export function App() {
       });
   }, []);
 
-  // Handle successful login or account creation - redirect to home page
+  // Handle successful login or account creation - redirect to appropriate dashboard
   const handleLoginSuccess = useCallback((user: AuthenticatedUser) => {
     setCurrentUser(user);
     localStorage.setItem('vigilai_user_session', JSON.stringify(user));
-    setActiveTab('landing');
+    if (user.role === 'inspector') {
+      setActiveTab('inspector-dashboard');
+    } else {
+      setActiveTab('landing');
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
@@ -255,11 +334,19 @@ export function App() {
       <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased">
         <LandingPage
           onEnterPortal={() => {
-            setActiveTab('national-command');
+            if (currentUser?.role === 'inspector') {
+              setActiveTab('inspector-dashboard');
+            } else {
+              setActiveTab('national-command');
+            }
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           onExploreProjects={() => {
-            setActiveTab('projects');
+            if (currentUser?.role === 'inspector') {
+              setActiveTab('inspector-project');
+            } else {
+              setActiveTab('projects');
+            }
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           onNavigateToLogin={() => {
@@ -366,6 +453,8 @@ export function App() {
                 {activeTab === 'map' && t('nav.gisMap', 'Geospatial Project Map')}
                 {activeTab === 'assistant-settings' && t('nav.settings', 'Platform Settings')}
                 {activeTab === 'admin-users' && t('nav.adminUsers', 'User Accounts & Access Control')}
+                {activeTab === 'inspector-dashboard' && t('nav.inspectorDashboard', 'Field Inspection Dashboard')}
+                {activeTab === 'inspector-project' && t('nav.myAssignments', 'Field Inspection Mission')}
               </h1>
             </div>
           </div>
@@ -420,8 +509,8 @@ export function App() {
               <span>{t('header.overviewBtn', 'Overview')}</span>
             </button>
 
-            {/* Quick Link to Projects */}
-            {activeTab !== 'projects' && (
+            {/* Quick Link to Projects (Officers/Public only, Inspectors have assigned list) */}
+            {activeTab !== 'projects' && currentUser?.role !== 'inspector' && (
               <button
                 id="header-projects-btn"
                 onClick={() => setActiveTab('projects')}
@@ -530,6 +619,34 @@ export function App() {
               projects={scoredProjects}
               onInspectProject={(p) => setSelectedProject(p)}
               currentUser={currentUser}
+              inspectionReports={inspectionReports}
+              onRequestReInspection={handleRequestReInspection}
+              onEscalateReport={handleEscalateReport}
+            />
+          )}
+
+          {/* Tab: Inspector Dashboard */}
+          {activeTab === 'inspector-dashboard' && (
+            <InspectorDashboardView
+              assignments={inspectorAssignments}
+              currentUser={currentUser}
+              onSelectAssignment={(a) => {
+                setSelectedAssignment(a);
+                setActiveTab('inspector-project');
+              }}
+              onNavigate={(tab) => setActiveTab(tab)}
+            />
+          )}
+
+          {/* Tab: Inspector Project Inspection Workflow */}
+          {activeTab === 'inspector-project' && (
+            <InspectorProjectView
+              assignments={inspectorAssignments}
+              initialAssignment={selectedAssignment}
+              reports={inspectionReports}
+              currentUser={currentUser}
+              onBack={() => setActiveTab('inspector-dashboard')}
+              onReportSubmit={handleReportSubmit}
             />
           )}
 

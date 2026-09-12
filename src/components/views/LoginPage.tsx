@@ -46,6 +46,7 @@ export const ALLOWED_ROLES = [
   'mp',
   'analyst',
   'viewer',
+  'inspector',
 ] as const;
 
 // Sign In Validation Schema
@@ -200,6 +201,24 @@ export const PRECONFIGURED_USERS: Record<
     department: 'Comptroller & Auditor General (CAG) Cell',
     description: 'Vigilance analytics and anomaly deep-dives.',
     badge: 'Auditor',
+    canDecide: false,
+  },
+  'inspector@mplads.vigilai': {
+    pass: 'VigilAI@2026',
+    name: 'Sh. Ramesh Kumar Verma, Field Inspector (INS-104)',
+    role: 'inspector',
+    department: 'District Collectorate — Field Inspection Wing, Varanasi',
+    description: 'Field Inspection Officer: Conduct on-site physical progress verification for 3 assigned MPLADS projects.',
+    badge: 'Field Inspector',
+    canDecide: false,
+  },
+  'inspector2@mplads.vigilai': {
+    pass: 'VigilAI@2026',
+    name: 'Ms. Priya Nair, Field Inspector (INS-201)',
+    role: 'inspector',
+    department: 'District Collectorate — Field Inspection Wing, Thiruvananthapuram',
+    description: 'Field Inspection Officer: Technical site verification for assigned Kerala projects.',
+    badge: 'Field Inspector',
     canDecide: false,
   },
 };
@@ -918,7 +937,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               </div>
 
               {/* Quick 1-click Role Selector Pills */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[11px]">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-[11px]">
                 <button
                   type="button"
                   onClick={() => {
@@ -966,6 +985,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 >
                   <div className="font-bold">⚙️ {t('auth.superAdmin', 'Admin')}</div>
                   <div className="text-[9px] text-slate-500 font-mono truncate">admin@...</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setValueLogin('email', 'inspector@mplads.vigilai', { shouldValidate: true });
+                    setValueLogin('password', 'VigilAI@2026', { shouldValidate: true });
+                    setValueLogin('role', 'inspector');
+                  }}
+                  className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-orange-200 dark:border-orange-900/50 hover:bg-orange-50 dark:hover:bg-orange-950/30 text-orange-800 dark:text-orange-300 font-semibold text-left transition-colors cursor-pointer"
+                >
+                  <div className="font-bold">🔍 {t('auth.fieldInspector', 'Inspector')}</div>
+                  <div className="text-[9px] text-slate-500 font-mono truncate">inspector@...</div>
                 </button>
               </div>
             </div>

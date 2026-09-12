@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { MPLADProject, InspectionAssignment, canMakeDecisions } from '../../types';
+import { MPLADProject, InspectionAssignment, InspectionReport, canMakeDecisions } from '../../types';
 import { PriorityBadge } from '../shared/StatusBadges';
+import { INSPECTION_ORDERS, InspectionOrder } from '../../data/inspectionData';
 import {
   ClipboardList,
   CheckCircle2,
@@ -13,19 +14,32 @@ import {
   FileCheck2,
   AlertOctagon,
   Calendar,
+  AlertTriangle,
+  FileText,
+  RefreshCw,
+  TrendingUp,
+  UserCheck,
 } from 'lucide-react';
 
 interface InspectionWorkbenchViewProps {
   projects: MPLADProject[];
   onInspectProject: (project: MPLADProject) => void;
   currentUser?: any;
+  inspectionReports?: InspectionReport[];
+  onRequestReInspection?: (reportId: string) => void;
+  onEscalateReport?: (reportId: string) => void;
 }
 
 export const InspectionWorkbenchView: React.FC<InspectionWorkbenchViewProps> = ({
   projects,
   onInspectProject,
   currentUser,
+  inspectionReports = [],
+  onRequestReInspection,
+  onEscalateReport,
 }) => {
+  const [workbenchTab, setWorkbenchTab] = useState<'workbench' | 'inspector-reports' | 'orders'>('workbench');
+
   const initialInspections: InspectionAssignment[] = [
     {
       id: 'INSP-2026-042',
@@ -323,6 +337,205 @@ export const InspectionWorkbenchView: React.FC<InspectionWorkbenchViewProps> = (
         <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
           <span>{submissionFeedback}</span>
+        </div>
+      )}
+
+      {/* Tab Navigation */}
+      <div className="flex p-1 rounded-xl bg-slate-100 border border-slate-200">
+        <button
+          onClick={() => setWorkbenchTab('workbench')}
+          className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+            workbenchTab === 'workbench'
+              ? 'bg-white text-indigo-700 shadow-xs'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <ClipboardList className="w-3.5 h-3.5" />
+          Officer Workbench
+        </button>
+        <button
+          onClick={() => setWorkbenchTab('inspector-reports')}
+          className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+            workbenchTab === 'inspector-reports'
+              ? 'bg-white text-indigo-700 shadow-xs'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <FileText className="w-3.5 h-3.5" />
+          Inspector Reports
+          {inspectionReports.filter((r) => r.officerReviewStatus === 'Pending Review').length > 0 && (
+            <span className="bg-rose-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+              {inspectionReports.filter((r) => r.officerReviewStatus === 'Pending Review').length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setWorkbenchTab('orders')}
+          className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+            workbenchTab === 'orders'
+              ? 'bg-white text-indigo-700 shadow-xs'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <UserCheck className="w-3.5 h-3.5" />
+          Inspection Orders
+        </button>
+      </div>
+
+      {/* Inspector Reports Tab Content */}
+      {workbenchTab === 'inspector-reports' && (
+        <div className="space-y-4">
+          {inspectionReports.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center text-slate-400">
+              <FileText className="w-8 h-8 mx-auto mb-2 opacity-40" />
+              <p className="text-sm font-medium">No inspector reports submitted yet</p>
+              <p className="text-xs mt-1">Inspector reports will appear here after field inspectors submit their findings</p>
+            </div>
+          ) : (
+            inspectionReports.map((report) => (
+              <div key={report.reportId} className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+                <div className="px-5 py-4 border-b border-slate-100 flex items-start justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-mono text-xs font-bold text-indigo-700">{report.reportId}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                        report.verdict === 'Satisfactory'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : report.verdict === 'Minor Issues'
+                          ? 'bg-amber-50 text-amber-700 border-amber-200'
+                          : report.verdict === 'Major Discrepancy'
+                          ? 'bg-orange-50 text-orange-700 border-orange-200'
+                          : 'bg-rose-50 text-rose-700 border-rose-200'
+                      }`}>
+                        {report.verdict}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                        report.officerReviewStatus === 'Pending Review'
+                          ? 'bg-blue-50 text-blue-700 border-blue-200'
+                          : 'bg-slate-50 text-slate-600 border-slate-200'
+                      }`}>
+                        {report.officerReviewStatus || 'Pending Review'}
+                      </span>
+                    </div>
+                    <h3 className="font-bold text-slate-900 text-sm">{report.projectTitle}</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {report.district}, {report.state} • Inspector: {report.inspectorName} • Submitted: {new Date(report.submittedAt).toLocaleDateString('en-IN')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="px-5 py-4 space-y-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                    <div>
+                      <div className="text-[10px] font-bold uppercase text-slate-400">Physical Gap</div>
+                      <div className={`font-bold ${Math.abs(report.physicalDiscrepancyPct) > 10 ? 'text-rose-600' : Math.abs(report.physicalDiscrepancyPct) > 5 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                        {report.physicalDiscrepancyPct > 0 ? '-' : '+'}{Math.abs(report.physicalDiscrepancyPct)}%
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold uppercase text-slate-400">Financial Gap</div>
+                      <div className={`font-bold ${Math.abs(report.financialDiscrepancyPct) > 10 ? 'text-rose-600' : Math.abs(report.financialDiscrepancyPct) > 5 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                        {report.financialDiscrepancyPct > 0 ? '-' : '+'}{Math.abs(report.financialDiscrepancyPct)}%
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold uppercase text-slate-400">Site Condition</div>
+                      <div className="font-bold text-slate-700">{report.overallSiteCondition}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold uppercase text-slate-400">Issues Found</div>
+                      <div className="font-bold text-slate-700">{report.issuesFound.length}</div>
+                    </div>
+                  </div>
+
+                  {report.issuesFound.length > 0 && (
+                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
+                      <div className="text-[10px] font-bold uppercase text-amber-700 mb-1">Issues Reported</div>
+                      <ul className="space-y-0.5">
+                        {report.issuesFound.map((issue, i) => (
+                          <li key={i} className="text-xs text-amber-700 flex items-center gap-1.5">
+                            <AlertTriangle className="w-2.5 h-2.5 shrink-0" /> {issue}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 leading-relaxed">
+                    <span className="font-bold text-slate-700">Summary: </span>{report.autoSummary}
+                  </div>
+
+                  {/* Officer Action Buttons */}
+                  {canMakeDecisions(currentUser?.role) && report.officerReviewStatus === 'Pending Review' && (
+                    <div className="flex gap-2 flex-wrap pt-1">
+                      <button
+                        onClick={() => onEscalateReport?.(report.reportId)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold cursor-pointer transition-colors"
+                      >
+                        <TrendingUp className="w-3 h-3" /> Escalate to Case
+                      </button>
+                      <button
+                        onClick={() => onRequestReInspection?.(report.reportId)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold cursor-pointer transition-colors"
+                      >
+                        <RefreshCw className="w-3 h-3" /> Request Re-inspection
+                      </button>
+                      <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer transition-colors">
+                        <CheckCircle2 className="w-3 h-3" /> Mark Reviewed
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Inspection Orders Tab Content */}
+      {workbenchTab === 'orders' && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100">
+              <h3 className="font-bold text-slate-900 text-sm">Active Inspection Orders</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Inspection orders assigned to field inspectors</p>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {INSPECTION_ORDERS.map((order) => (
+                <div key={order.orderId} className="px-5 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-mono text-xs font-bold text-indigo-700">{order.orderId}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                          order.status === 'Open'
+                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                            : order.status === 'Submitted'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : 'bg-slate-50 text-slate-600 border-slate-200'
+                        }`}>
+                          {order.status}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                          order.priority === 'P0' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-amber-50 text-amber-700 border-amber-200'
+                        }`}>
+                          {order.priority}
+                        </span>
+                      </div>
+                      <div className="font-bold text-sm text-slate-900">{order.projectTitle}</div>
+                      <div className="text-xs text-slate-500 mt-0.5">
+                        {order.district}, {order.state} • Assigned to: {order.assignedInspectorName}
+                      </div>
+                      <div className="text-xs text-slate-500 mt-0.5">
+                        Deadline: {new Date(order.deadline).toLocaleDateString('en-IN')} • By: {order.createdBy}
+                      </div>
+                      <div className="text-xs text-slate-600 mt-1.5 leading-relaxed">{order.instructions}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 

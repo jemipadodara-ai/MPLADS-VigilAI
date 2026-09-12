@@ -397,7 +397,8 @@ export type PlatformRole =
   | 'mp'             // Member of Parliament
   | 'analyst'        // Senior Vigilance / Audit Analyst
   | 'citizen'        // Citizen / Public User (View-only, cannot execute decisions)
-  | 'viewer';        // Public Observer (View-only)
+  | 'viewer'         // Public Observer (View-only)
+  | 'inspector';     // Field Inspection Officer (assigned projects only)
 
 export interface MinisterActionRecord {
   id: string;
@@ -436,6 +437,11 @@ export const isCitizenOrViewer = (role?: string | null): boolean => {
   if (!role) return true;
   const r = role.toLowerCase();
   return r === 'citizen' || r === 'viewer';
+};
+
+export const isInspector = (role?: string | null): boolean => {
+  if (!role) return false;
+  return role.toLowerCase() === 'inspector';
 };
 
 export type FraudStatus =
@@ -709,3 +715,107 @@ export interface NationalRiskIndex {
     direction: 'Up' | 'Down';
   }[];
 }
+
+// ---------------------------------------------------------------------------
+// INSPECTOR ROLE — NEW TYPES
+// ---------------------------------------------------------------------------
+
+export interface InspectorAssignedProject {
+  assignmentId: string;            // e.g. INSP-2026-042
+  projectId: string;               // links to MPLADProject.id or workCode
+  projectWorkCode: string;         // e.g. MPLADS-2026-001
+  projectTitle: string;
+  district: string;
+  state: string;
+  constituency: string;
+  sanctionedAmountLakhs: number;
+  reportedPhysicalProgressPct: number;
+  reportedFinancialProgressPct: number;
+  riskScore?: number;
+  riskLevel?: string;
+  deadline: string;                // ISO date
+  priority: 'P0' | 'P1' | 'P2' | 'P3';
+  status: 'Pending' | 'In Progress' | 'Submitted' | 'Overdue';
+  assignedBy: string;              // Officer email/name who assigned
+  assignedAt: string;              // ISO timestamp
+  reportId?: string;               // populated after report is submitted
+  notes?: string;                  // Officer notes to Inspector
+}
+
+export type SiteConditionStatus = 'Verified' | 'Not Verified' | 'N/A';
+
+export interface ComponentVerification {
+  name: string;                    // e.g. 'Civil Structure', 'Roads', 'Equipment'
+  reportedPct: number;
+  actualPct: number;
+  discrepancyPct: number;
+  status: 'Match' | 'Minor Discrepancy' | 'Major Discrepancy' | 'Not Inspected';
+  remarks: string;
+}
+
+export interface SiteChecklist {
+  item: string;
+  status: SiteConditionStatus;
+  remarks?: string;
+}
+
+export interface InspectionReport {
+  reportId: string;                // e.g. RPT-2026-089
+  assignmentId: string;
+  projectId: string;
+  projectWorkCode: string;
+  projectTitle: string;
+  district: string;
+  state: string;
+  inspectorEmail: string;
+  inspectorName: string;
+
+  // Step 1 — Physical Progress
+  reportedPhysicalPct: number;
+  actualPhysicalPct: number;
+  physicalDiscrepancyPct: number;
+  reportedFinancialPct: number;
+  actualFinancialPct: number;
+  financialDiscrepancyPct: number;
+
+  // Step 2 — Component Verification
+  componentVerifications: ComponentVerification[];
+
+  // Step 3 — Site Condition Checklist
+  siteChecklist: SiteChecklist[];
+  overallSiteCondition: 'Satisfactory' | 'Needs Attention' | 'Serious Issue';
+
+  // Step 4 — GPS
+  gpsVerified: boolean;
+  gpsCoordinates?: { lat: number; lng: number };
+  gpsAccuracyM?: number;
+
+  // Step 5 — Evidence
+  evidenceFiles: {
+    id: string;
+    name: string;
+    type: 'Photo' | 'Video' | 'Document' | 'GeoTag';
+    size: string;
+    uploadedAt: string;
+  }[];
+
+  // Step 6 — Observations
+  inspectorObservations: string;
+  issuesFound: string[];
+
+  // Step 7 — Verdict
+  verdict: 'Satisfactory' | 'Minor Issues' | 'Major Discrepancy' | 'Fraud Suspected';
+  autoSummary: string;
+
+  // Meta
+  submittedAt: string;
+  isSubmitted: boolean;
+  isReadOnly: boolean;
+
+  // Officer actions (after submission)
+  officerReviewStatus?: 'Pending Review' | 'Reviewed' | 'Escalated' | 'Re-inspection Requested';
+  officerNotes?: string;
+  officerReviewedAt?: string;
+  officerReviewedBy?: string;
+}
+

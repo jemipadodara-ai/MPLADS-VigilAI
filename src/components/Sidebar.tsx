@@ -23,8 +23,9 @@ import {
   ClipboardList,
   Building2,
   FileText,
+  ClipboardCheck,
 } from 'lucide-react';
-import { isCitizenOrViewer, canMakeDecisions } from '../types';
+import { isCitizenOrViewer, canMakeDecisions, isInspector } from '../types';
 import { useTranslation } from '../i18n/LanguageContext';
 import { LanguageSelector } from './shared/LanguageSelector';
 
@@ -48,6 +49,8 @@ export type ActiveTab =
   | 'assistant-settings'
   | 'profile'
   | 'admin-users'
+  | 'inspector-dashboard'
+  | 'inspector-project'
   | 'login';
 
 interface SidebarProps {
@@ -209,9 +212,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return items;
   }, [t, totalProjectsCount, user]);
 
+  // Inspector-specific nav items (strictly separate from officer nav)
+  const inspectorNavItems: NavItem[] = useMemo(() => [
+    {
+      id: 'inspector-dashboard',
+      label: t('nav.inspectorDashboard', 'My Dashboard'),
+      icon: LayoutDashboard,
+      section: t('nav.sectionInspector', 'FIELD INSPECTION'),
+    },
+    {
+      id: 'inspector-project',
+      label: t('nav.myAssignments', 'My Assignments'),
+      icon: ClipboardCheck,
+      section: t('nav.sectionInspector', 'FIELD INSPECTION'),
+    },
+    {
+      id: 'map',
+      label: t('nav.gisMap', 'Project Map'),
+      icon: MapPin,
+      section: t('nav.sectionInspector', 'FIELD INSPECTION'),
+    },
+    {
+      id: 'assistant-settings',
+      label: t('nav.settings', 'Settings'),
+      icon: Sparkles,
+    },
+  ], [t]);
+
   const userRole = user?.role || null;
   const isViewerOnly = isCitizenOrViewer(userRole);
   const isAdmin = ['admin', 'minister'].includes((userRole || '').toLowerCase());
+  const userIsInspector = isInspector(userRole);
 
   const officerOnlyTabs: ActiveTab[] = [
     'decision-center',
@@ -225,11 +256,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
     'ai-copilot',
   ];
 
-  const visibleNavItems = navItems.filter((item) => {
-    if (isViewerOnly && officerOnlyTabs.includes(item.id)) return false;
-    if (item.id === 'admin-users' && !isAdmin) return false;
-    return true;
-  });
+  // Inspectors get a completely separate, restricted nav
+  const visibleNavItems = userIsInspector
+    ? inspectorNavItems
+    : navItems.filter((item) => {
+        if (isViewerOnly && officerOnlyTabs.includes(item.id)) return false;
+        if (item.id === 'admin-users' && !isAdmin) return false;
+        // Hide inspector tabs from non-inspectors
+        if (item.id === 'inspector-dashboard' || item.id === 'inspector-project') return false;
+        return true;
+      });
+
 
   return (
     <aside
