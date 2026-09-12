@@ -6,11 +6,15 @@ import { gu } from './translations/gu';
 import { mr } from './translations/mr';
 import { bn } from './translations/bn';
 import { pa } from './translations/pa';
+import { VOCABULARY, transliterateEnglish, SupportedLang } from './vocabulary';
 
 export const AVAILABLE_LANGUAGES: LanguageInfo[] = [
   { code: 'en', name: 'English', nativeName: 'English', flag: '🇬🇧' },
   { code: 'hi', name: 'Hindi', nativeName: 'हिंदी', flag: '🇮🇳' },
   { code: 'gu', name: 'Gujarati', nativeName: 'ગુજરાતી', flag: '🇮🇳' },
+  { code: 'mr', name: 'Marathi', nativeName: 'मराठी', flag: '🇮🇳' },
+  { code: 'bn', name: 'Bengali', nativeName: 'বাংলা', flag: '🇮🇳' },
+  { code: 'pa', name: 'Punjabi', nativeName: 'ਪੰਜਾਬੀ', flag: '🇮🇳' },
 ];
 
 const TRANSLATIONS: Record<LanguageCode, TranslationDictionary> = {
@@ -30,6 +34,9 @@ function detectBrowserLanguage(): LanguageCode {
   const browserLang = (navigator.language || (navigator as any).userLanguage || '').toLowerCase();
   if (browserLang.startsWith('hi')) return 'hi';
   if (browserLang.startsWith('gu')) return 'gu';
+  if (browserLang.startsWith('mr')) return 'mr';
+  if (browserLang.startsWith('bn')) return 'bn';
+  if (browserLang.startsWith('pa')) return 'pa';
   return 'en';
 }
 
@@ -44,15 +51,121 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-// Precompute reverse lookup from any language phrase to canonical English key
-const reverseToEnglish = new Map<string, string>();
-for (const langKey of Object.keys(TRANSLATIONS) as LanguageCode[]) {
-  const p = TRANSLATIONS[langKey]?.phrases || {};
-  for (const [enKey, transVal] of Object.entries(p)) {
-    if (transVal && typeof transVal === 'string') {
-      reverseToEnglish.set(transVal.trim().toLowerCase(), enKey.trim());
+// Precompute translation maps and multi-word phrase patterns per language
+interface LanguageEngine {
+  textMap: Map<string, string>;
+  textMapLower: Map<string, string>;
+  multiWordList: Array<{
+    lower: string;
+    regex: RegExp;
+    translation: string;
+  }>;
+  translate: (raw: string) => string;
+}
+
+const ENGINE_CACHE = new Map<LanguageCode, LanguageEngine>();
+
+function getEngine(lang: LanguageCode): LanguageEngine {
+  if (ENGINE_CACHE.has(lang)) {
+    return ENGINE_CACHE.get(lang)!;
+  }
+
+  const textMap = new Map<string, string>();
+  const textMapLower = new Map<string, string>();
+  const multiWordList: Array<{ lower: string; regex: RegExp; translation: string }> = [];
+
+  if (lang === 'en') {
+    const engine: LanguageEngine = {
+      textMap,
+      textMapLower,
+      multiWordList,
+      translate: (s) => s,
+    };
+    ENGINE_CACHE.set(lang, engine);
+    return engine;
+  }
+
+  const dict = TRANSLATIONS[lang] || en;
+  const mergedPhrases: Record<string, string> = {
+    ...(dict.phrases || {}),
+    ...((VOCABULARY as any)[lang] || {}),
+  };
+
+  const rawMultiList: Array<{ raw: string; lower: string; translation: string; len: number }> = [];
+
+  for (const [k, v] of Object.entries(mergedPhrases)) {
+    if (k && v && typeof v === 'string') {
+      const kTrim = k.trim();
+      const vTrim = v.trim();
+      textMap.set(kTrim, vTrim);
+      textMapLower.set(kTrim.toLowerCase(), vTrim);
+
+      if (/\s|[-/–—]/.test(kTrim) && kTrim.length >= 2) {
+        rawMultiList.push({
+          raw: kTrim,
+          lower: kTrim.toLowerCase(),
+          translation: vTrim,
+          len: kTrim.length,
+        });
+      }
     }
   }
+
+  // Sort multi-word phrases by length descending to match longer phrases first
+  rawMultiList.sort((a, b) => b.len - a.len);
+
+  for (const item of rawMultiList) {
+    const escaped = item.raw.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+    multiWordList.push({
+      lower: item.lower,
+      regex: new RegExp('\\b' + escaped + '\\b', 'gi'),
+      translation: item.translation,
+    });
+  }
+
+  const translate = (str: string): string => {
+    if (!str || typeof str !== 'string') return str;
+    const trimmed = str.trim();
+    if (!trimmed) return str;
+
+    // 1. Exact match (case preserved or lowercase)
+    if (textMap.has(trimmed)) {
+      return str.replace(trimmed, textMap.get(trimmed)!);
+    }
+    const lower = trimmed.toLowerCase();
+    if (textMapLower.has(lower)) {
+      return str.replace(trimmed, textMapLower.get(lower)!);
+    }
+
+    // 2. Multi-word phrase replacements
+    let out = str;
+    for (const item of multiWordList) {
+      if (out.toLowerCase().includes(item.lower)) {
+        out = out.replace(item.regex, item.translation);
+      }
+    }
+
+    // 3. Word token replacement & transliteration fallback
+    out = out.replace(/\b[A-Za-z]+(?:'[A-Za-z]+)?\b/g, (token) => {
+      const tLower = token.toLowerCase();
+      if (textMapLower.has(tLower)) {
+        return textMapLower.get(tLower)!;
+      }
+      return transliterateEnglish(token, lang as SupportedLang);
+    });
+
+    return out;
+  };
+
+  const engine: LanguageEngine = {
+    textMap,
+    textMapLower,
+    multiWordList,
+    translate,
+  };
+
+  ENGINE_CACHE.set(lang, engine);
+  return engine;
 }
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -83,118 +196,37 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
-  // Dynamic DOM text translator for universal coverage across all views and components
+  // Universal Non-Destructive DOM Text Translator
   useEffect(() => {
     if (typeof document === 'undefined') return;
 
     document.documentElement.lang = language;
-
-    // 1. Reset all previously translated nodes and attributes
-    document.querySelectorAll('[data-vigilai-orig]').forEach((el) => {
-      const orig = el.getAttribute('data-vigilai-orig');
-      if (orig) {
-        el.textContent = orig;
-        el.removeAttribute('data-vigilai-orig');
-      }
-    });
-
-    document.querySelectorAll('[data-vigilai-orig-ph]').forEach((el) => {
-      const orig = el.getAttribute('data-vigilai-orig-ph');
-      if (orig) {
-        (el as HTMLInputElement).placeholder = orig;
-        el.removeAttribute('data-vigilai-orig-ph');
-      }
-    });
-
-    document.querySelectorAll('[data-vigilai-orig-title]').forEach((el) => {
-      const orig = el.getAttribute('data-vigilai-orig-title');
-      if (orig) {
-        (el as HTMLElement).title = orig;
-        el.removeAttribute('data-vigilai-orig-title');
-      }
-    });
-
-    if (language === 'en') {
-      return;
-    }
-
-    const currentDict = TRANSLATIONS[language] || en;
-    const phraseMap = currentDict.phrases || {};
-    const textMap = new Map<string, string>();
-    for (const [k, v] of Object.entries(phraseMap)) {
-      if (k && v && typeof v === 'string') {
-        textMap.set(k.trim(), v.trim());
-      }
-    }
-
-    // Helper to resolve translation for a string (direct or reverse lookup)
-    const getTranslation = (raw: string): string | null => {
-      const trimmed = raw.trim();
-      if (!trimmed || trimmed.length < 2) return null;
-
-      // Direct match
-      if (textMap.has(trimmed)) {
-        return textMap.get(trimmed)!;
-      }
-
-      // Reverse lookup (in case text was in another language)
-      const enKey = reverseToEnglish.get(trimmed.toLowerCase());
-      if (enKey && textMap.has(enKey)) {
-        return textMap.get(enKey)!;
-      }
-
-      // Compound phrase replacements
-      // e.g., "12 Entities" -> "12 इकाइयां"
-      if (/\b\d+\s+Entities\b/i.test(trimmed) && textMap.has('Entities')) {
-        return trimmed.replace(/\bEntities\b/gi, textMap.get('Entities')!);
-      }
-      if (/\b\d+\s+Vendors\b/i.test(trimmed) && textMap.has('Vendors')) {
-        return trimmed.replace(/\bVendors\b/gi, textMap.get('Vendors')!);
-      }
-      if (/\b\d+\s+(?:works|Works)\b/i.test(trimmed) && (textMap.has('works') || textMap.has('Works Registry'))) {
-        const transWorks = textMap.get('works') || textMap.get('Works Registry')!;
-        return trimmed.replace(/\b(?:works|Works)\b/gi, transWorks);
-      }
-      if (/\b\d+d?\s+Overdue\b/i.test(trimmed) && (textMap.has('Overdue') || textMap.has('Days Overdue'))) {
-        const trans = textMap.get('Overdue') || textMap.get('Days Overdue')!;
-        return trimmed.replace(/\bOverdue\b/gi, trans);
-      }
-      if (/[+-]?\d+%?\s+Overrun\b/i.test(trimmed) && textMap.has('Overrun')) {
-        return trimmed.replace(/\bOverrun\b/gi, textMap.get('Overrun')!);
-      }
-      if (/\d+%\s+Done\b/i.test(trimmed) && textMap.has('Done')) {
-        return trimmed.replace(/\bDone\b/gi, textMap.get('Done')!);
-      }
-      if (/\d+%\s+disbursed\b/i.test(trimmed) && textMap.has('disbursed')) {
-        return trimmed.replace(/\bdisbursed\b/gi, textMap.get('disbursed')!);
-      }
-      if (/^Score:\s*/i.test(trimmed) && textMap.has('Score:')) {
-        return trimmed.replace(/^Score:\s*/i, `${textMap.get('Score:')!} `);
-      }
-
-      return null;
-    };
+    const engine = getEngine(language);
 
     const translateNode = (node: Node) => {
       if (node.nodeType === Node.TEXT_NODE) {
-        const text = node.nodeValue || '';
-        const trimmed = text.trim();
-        if (!trimmed || trimmed.length < 2) return;
+        const textNode = node as Text;
+        const parent = textNode.parentElement;
+        if (parent) {
+          const tag = parent.tagName.toLowerCase();
+          if (['script', 'style', 'code', 'pre'].includes(tag)) return;
+          if (parent.isContentEditable) return;
+        }
 
-        const translated = getTranslation(trimmed);
-        if (translated) {
-          const parent = node.parentElement;
-          if (parent) {
-            const tag = parent.tagName.toLowerCase();
-            if (['script', 'style', 'code', 'pre'].includes(tag)) return;
-            if (parent.isContentEditable) return;
-            if (!parent.hasAttribute('data-vigilai-orig')) {
-              parent.setAttribute('data-vigilai-orig', trimmed);
-            }
-          }
-          const leading = text.match(/^\s*/)?.[0] || '';
-          const trailing = text.match(/\s*$/)?.[0] || '';
-          node.nodeValue = leading + translated + trailing;
+        const currentVal = textNode.nodeValue || '';
+        if (!currentVal.trim()) return;
+
+        // Save pristine original text on first encounter
+        if ((textNode as any).__vigilai_orig === undefined) {
+          (textNode as any).__vigilai_orig = currentVal;
+        }
+        const orig = (textNode as any).__vigilai_orig;
+
+        const targetVal = language === 'en' ? orig : engine.translate(orig);
+        if (textNode.nodeValue !== targetVal) {
+          (textNode as any).__vigilai_translating = true;
+          textNode.nodeValue = targetVal;
+          (textNode as any).__vigilai_translating = false;
         }
       } else if (node.nodeType === Node.ELEMENT_NODE) {
         const el = node as HTMLElement;
@@ -202,28 +234,45 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (['script', 'style', 'code', 'pre'].includes(tag)) return;
         if (el.isContentEditable) return;
 
-        // Check placeholder on input/textarea
+        // Input and textarea placeholders
         if (tag === 'input' || tag === 'textarea') {
           const input = el as HTMLInputElement | HTMLTextAreaElement;
           if (input.placeholder) {
-            const transPlaceholder = getTranslation(input.placeholder);
-            if (transPlaceholder && transPlaceholder !== input.placeholder) {
-              if (!input.hasAttribute('data-vigilai-orig-ph')) {
-                input.setAttribute('data-vigilai-orig-ph', input.placeholder);
-              }
-              input.placeholder = transPlaceholder;
+            if ((input as any).__vigilai_orig_ph === undefined) {
+              (input as any).__vigilai_orig_ph = input.placeholder;
+            }
+            const origPh = (input as any).__vigilai_orig_ph;
+            const targetPh = language === 'en' ? origPh : engine.translate(origPh);
+            if (input.placeholder !== targetPh) {
+              input.placeholder = targetPh;
             }
           }
         }
 
-        // Check title attribute (tooltip)
+        // Element title tooltip
         if (el.title) {
-          const transTitle = getTranslation(el.title);
-          if (transTitle && transTitle !== el.title) {
-            if (!el.hasAttribute('data-vigilai-orig-title')) {
-              el.setAttribute('data-vigilai-orig-title', el.title);
+          if ((el as any).__vigilai_orig_title === undefined) {
+            (el as any).__vigilai_orig_title = el.title;
+          }
+          const origTitle = (el as any).__vigilai_orig_title;
+          const targetTitle = language === 'en' ? origTitle : engine.translate(origTitle);
+          if (el.title !== targetTitle) {
+            el.title = targetTitle;
+          }
+        }
+
+        // Accessibility aria-label
+        if (el.hasAttribute('aria-label')) {
+          const aria = el.getAttribute('aria-label') || '';
+          if (aria) {
+            if ((el as any).__vigilai_orig_aria === undefined) {
+              (el as any).__vigilai_orig_aria = aria;
             }
-            el.title = transTitle;
+            const origAria = (el as any).__vigilai_orig_aria;
+            const targetAria = language === 'en' ? origAria : engine.translate(origAria);
+            if (el.getAttribute('aria-label') !== targetAria) {
+              el.setAttribute('aria-label', targetAria);
+            }
           }
         }
 
@@ -233,7 +282,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     };
 
-    // Initial pass over the entire document body
+    // Full traversal over document.body
     translateNode(document.body);
 
     const observer = new MutationObserver((mutations) => {
@@ -241,10 +290,20 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (mutation.type === 'childList') {
           mutation.addedNodes.forEach((n) => translateNode(n));
         } else if (mutation.type === 'characterData') {
-          const text = mutation.target.nodeValue?.trim() || '';
-          const trans = getTranslation(text);
-          if (trans && trans !== text) {
-            translateNode(mutation.target);
+          const target = mutation.target as Text;
+          if ((target as any).__vigilai_translating) continue;
+
+          if (language !== 'en') {
+            const current = target.nodeValue || '';
+            if (/[A-Za-z]/.test(current)) {
+              (target as any).__vigilai_orig = current;
+              const translated = engine.translate(current);
+              if (target.nodeValue !== translated) {
+                (target as any).__vigilai_translating = true;
+                target.nodeValue = translated;
+                (target as any).__vigilai_translating = false;
+              }
+            }
           }
         }
       }
@@ -269,15 +328,27 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return TRANSLATIONS[language] || en;
   }, [language]);
 
-  // Nested translation & direct phrase helper: t('nav.commandCenter') or t('Sign In')
+  const engine = useMemo(() => getEngine(language), [language]);
+
+  // Translation helper: t('keyPath') or t('Exact English Phrase')
   const t = useCallback(
     (keyPath: string, fallbackText?: string): string => {
-      // 1. Check direct phrase map in current language
+      if (language === 'en') {
+        return fallbackText || keyPath;
+      }
+
+      // 1. Direct phrase lookup in current dictionary
       if (dict.phrases && typeof dict.phrases[keyPath] === 'string') {
         return dict.phrases[keyPath];
       }
 
-      // 2. Nested dot-path in current language dict
+      // 2. Vocabulary lookup
+      const vocabLang = (VOCABULARY as any)[language];
+      if (vocabLang && typeof vocabLang[keyPath] === 'string') {
+        return vocabLang[keyPath];
+      }
+
+      // 3. Dot-notation nested lookup
       const parts = keyPath.split('.');
       let current: any = dict;
       for (const part of parts) {
@@ -288,34 +359,15 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           break;
         }
       }
-
       if (typeof current === 'string') {
         return current;
       }
 
-      // 3. Fallback to English phrase map
-      if (en.phrases && typeof en.phrases[keyPath] === 'string') {
-        return en.phrases[keyPath];
-      }
-
-      // 4. Fallback to English dictionary dot-path
-      let fallbackCurrent: any = en;
-      for (const part of parts) {
-        if (fallbackCurrent && typeof fallbackCurrent === 'object' && part in fallbackCurrent) {
-          fallbackCurrent = fallbackCurrent[part];
-        } else {
-          fallbackCurrent = undefined;
-          break;
-        }
-      }
-
-      if (typeof fallbackCurrent === 'string') {
-        return fallbackCurrent;
-      }
-
-      return fallbackText || keyPath;
+      // 4. Translate the fallbackText or keyPath through the engine
+      const source = fallbackText || keyPath;
+      return engine.translate(source);
     },
-    [dict]
+    [dict, language, engine]
   );
 
   const contextValue = useMemo<LanguageContextType>(
@@ -345,4 +397,3 @@ export function useTranslation() {
   const { t, language, dict } = useLanguage();
   return { t, language, dict };
 }
-

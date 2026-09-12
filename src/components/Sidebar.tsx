@@ -252,10 +252,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
               <div className="truncate">
                 <div className="font-black text-sm tracking-tight text-slate-900 leading-tight">
-                  MPLADS <span className="text-indigo-600">VigilAI</span>
+                  {t('MPLADS', 'MPLADS')} <span className="text-indigo-600">{t('VigilAI', 'VigilAI')}</span>
                 </div>
                 <div className="text-[10px] text-slate-500 font-medium truncate">
-                  Risk Monitoring
+                  {t('Risk Monitoring', 'Risk Monitoring')}
                 </div>
               </div>
             </div>
@@ -343,7 +343,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             : 'bg-slate-100 text-slate-600'
                         }`}
                       >
-                        {item.badge}
+                        {typeof item.badge === 'string' ? t(item.badge, item.badge) : item.badge}
                       </span>
                     )}
                   </button>

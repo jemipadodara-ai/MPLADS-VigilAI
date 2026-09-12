@@ -1,6 +1,7 @@
 import React from 'react';
 import { ShieldAlert, Activity, CheckCircle2, AlertTriangle, IndianRupee, RefreshCw, Landmark } from 'lucide-react';
 import { MPLADProject } from '../types';
+import { useTranslation } from '../i18n/LanguageContext';
 
 interface HeaderProps {
   projects: MPLADProject[];
@@ -17,6 +18,7 @@ export const Header: React.FC<HeaderProps> = ({
   activeTab,
   setActiveTab,
 }) => {
+  const { t } = useTranslation();
   const safeProjects = projects || [];
   const criticalCount = safeProjects.filter((p) => (p.riskLevel || '').toUpperCase() === 'CRITICAL').length;
   const highCount = safeProjects.filter((p) => (p.riskLevel || '').toUpperCase() === 'HIGH').length;
@@ -25,12 +27,12 @@ export const Header: React.FC<HeaderProps> = ({
     .reduce((acc, p) => acc + (p.sanctionedAmountLakhs || 0), 0);
 
   const tabs = [
-    { id: 'dashboard', label: 'Command Center', icon: Activity },
-    { id: 'scanner', label: 'Anomaly & Fraud Scanner', icon: ShieldAlert, badge: criticalCount + highCount },
-    { id: 'cartels', label: 'Contractor Cartels & Slicing', icon: AlertTriangle },
-    { id: 'geospatial', label: 'Geospatial & Ghost Inspector', icon: Landmark },
-    { id: 'investigator', label: 'AI Forensic Investigator', icon: RefreshCw, ai: true },
-    { id: 'sandbox', label: 'Pre-Sanction Sandbox', icon: CheckCircle2 },
+    { id: 'dashboard', label: t('nav.commandCenter', 'Command Center'), icon: Activity },
+    { id: 'scanner', label: t('Anomaly & Fraud Scanner', 'Anomaly & Fraud Scanner'), icon: ShieldAlert, badge: criticalCount + highCount },
+    { id: 'cartels', label: t('Contractor Cartels & Slicing', 'Contractor Cartels & Slicing'), icon: AlertTriangle },
+    { id: 'geospatial', label: t('Geospatial & Ghost Inspector', 'Geospatial & Ghost Inspector'), icon: Landmark },
+    { id: 'investigator', label: t('AI Forensic Investigator', 'AI Forensic Investigator'), icon: RefreshCw, ai: true },
+    { id: 'sandbox', label: t('Pre-Sanction Sandbox', 'Pre-Sanction Sandbox'), icon: CheckCircle2 },
   ];
 
   return (
@@ -44,18 +46,18 @@ export const Header: React.FC<HeaderProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                MPLADS <span className="text-amber-400">VigilAI</span>
+                {t('MPLADS', 'MPLADS')} <span className="text-amber-400">{t('VigilAI', 'VigilAI')}</span>
               </h1>
               <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                MoSPI Compliance v2023
+                {t('MoSPI Compliance v2023', 'MoSPI Compliance v2023')}
               </span>
               <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                AI Sentinel Live
+                {t('AI Sentinel Live', 'AI Sentinel Live')}
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              Forensic Audit Engine for Anomaly, Fraud & Inefficiency Detection in Member of Parliament Local Area Development Scheme
+              {t('Forensic Audit Engine for Anomaly, Fraud & Inefficiency Detection in Member of Parliament Local Area Development Scheme', 'Forensic Audit Engine for Anomaly, Fraud & Inefficiency Detection in Member of Parliament Local Area Development Scheme')}
             </p>
           </div>
         </div>
@@ -64,8 +66,8 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-800/80 rounded-lg border border-slate-700 text-xs">
             <IndianRupee className="h-3.5 w-3.5 text-amber-400" />
-            <span className="text-slate-400">Flagged Exposure:</span>
-            <span className="font-semibold text-amber-300">₹{(totalExposureLakhs / 100).toFixed(2)} Cr</span>
+            <span className="text-slate-400">{t('Flagged Exposure:', 'Flagged Exposure:')}</span>
+            <span className="font-semibold text-amber-300">₹{(totalExposureLakhs / 100).toFixed(2)} {t('Cr', 'Cr')}</span>
           </div>
 
           <button
@@ -78,7 +80,7 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isAuditing ? 'animate-spin text-amber-400' : ''}`} />
-            {isAuditing ? 'Scanning Registry...' : 'Run Forensic Scan'}
+            {isAuditing ? t('Scanning Registry...', 'Scanning Registry...') : t('Run Forensic Scan', 'Run Forensic Scan')}
           </button>
         </div>
       </div>
@@ -107,7 +109,7 @@ export const Header: React.FC<HeaderProps> = ({
               )}
               {tab.ai && (
                 <span className="px-1.5 py-0.2 text-[9px] font-extrabold uppercase rounded bg-indigo-500/30 text-indigo-300 border border-indigo-500/40">
-                  Gemini
+                  {t('Gemini', 'Gemini')}
                 </span>
               )}
             </button>
