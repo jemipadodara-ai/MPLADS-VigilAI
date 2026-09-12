@@ -61,6 +61,52 @@ function formatKeyName(key: string): string {
 }
 
 function formatParsedJsonToMarkdown(data: any): string {
+  if (data && typeof data === 'object') {
+    // If the object contains a projects array
+    const projectsList = Array.isArray(data.projects)
+      ? data.projects
+      : Array.isArray(data)
+      ? data
+      : null;
+
+    if (projectsList && projectsList.length > 0) {
+      const totalCount = projectsList.length;
+      const totalSanctioned = projectsList.reduce((acc, p) => acc + (Number(p.sanctionedAmountLakhs) || Number(p.sanctionedAmount) || 0), 0);
+      const totalSpent = projectsList.reduce((acc, p) => acc + (Number(p.expenditureAmountLakhs) || Number(p.expenditureAmount) || 0), 0);
+      const criticalCount = projectsList.filter((p) => (p.overallRiskScore || p.riskScore || 0) >= 75).length;
+      const delayedCount = projectsList.filter((p) => {
+        const s = (p.status || '').toLowerCase();
+        return s.includes('delay') || s.includes('stall') || (p.delayDays || 0) > 30;
+      }).length;
+
+      let md = `A comprehensive audit of the MPLADS National Registry identified **${totalCount} projects** matching your request, representing a cumulative sanctioned value of **₹${totalSanctioned.toFixed(2)} Lakhs** with **₹${totalSpent.toFixed(2)} Lakhs** expended to date.\n\n`;
+      md += `### 📊 Portfolio Summary:\n`;
+      md += `- **Critical Risk (P0):** **${criticalCount} projects** require urgent audit intervention or payment freeze.\n`;
+      md += `- **Milestone Delays:** **${delayedCount} projects** have recorded schedule slippages.\n\n`;
+      md += `### 📋 Monitored Works Dossier:\n`;
+
+      projectsList.forEach((p: any, idx: number) => {
+        const score = p.overallRiskScore || p.riskScore || 50;
+        const alertIcon = score >= 75 ? '🚨' : score >= 60 ? '⚠️' : '🔹';
+        const sanctioned = p.sanctionedAmountLakhs ?? p.sanctionedAmount ?? 0;
+        const spent = p.expenditureAmountLakhs ?? p.expenditureAmount ?? 0;
+        const progress = p.completionPercentage ?? 0;
+
+        md += `\n**${idx + 1}. ${alertIcon} ${p.title || p.projectName || 'MPLADS Work'}**\n`;
+        md += `   - **Work Code:** \`${p.workCode || p.id}\`\n`;
+        md += `   - **Location:** ${p.district || 'Varanasi'}, ${p.state || 'UP'} (Constituency: ${p.constituency || 'Varanasi'})\n`;
+        md += `   - **Financials:** Sanctioned: **₹${sanctioned} Lakhs** | Expended: **₹${spent} Lakhs**\n`;
+        md += `   - **Physical Reality:** **${progress}% ground completion** (Status: ${p.status || 'Active'})\n`;
+        md += `   - **Risk Score:** **${score}/100** | **Contractor:** ${p.contractorName || 'Assigned Implementing Agency'}\n`;
+        if (p.anomalyFlags && p.anomalyFlags.length > 0) {
+          const flag = p.anomalyFlags[0];
+          md += `   - **Key Trigger:** ${typeof flag === 'string' ? flag : flag.description || flag.title || 'Anomalous pattern'}\n`;
+        }
+      });
+      return md;
+    }
+  }
+
   if (Array.isArray(data)) {
     return data
       .map((item, idx) => {
@@ -93,6 +139,26 @@ function formatParsedJsonToMarkdown(data: any): string {
 function cleanTextResponse(raw: string): string {
   if (!raw) return 'No response details received.';
   let text = raw.trim();
+
+  // If text starts with something like "Retrieved official records: {" or "**VigilAI Assistant** ... \n\nRetrieved official records: {"
+  const retrievedIndex = text.indexOf('Retrieved official records:');
+  if (retrievedIndex !== -1) {
+    const jsonPart = text.slice(retrievedIndex + 'Retrieved official records:'.length).trim();
+    try {
+      const parsed = JSON.parse(jsonPart);
+      return formatParsedJsonToMarkdown(parsed);
+    } catch {
+      const startBracket = jsonPart.indexOf('{');
+      const startArray = jsonPart.indexOf('[');
+      const startPos = startBracket !== -1 ? startBracket : startArray;
+      if (startPos !== -1) {
+        try {
+          const parsed = JSON.parse(jsonPart.slice(startPos));
+          return formatParsedJsonToMarkdown(parsed);
+        } catch {}
+      }
+    }
+  }
 
   // If wrapped in markdown json block
   if (text.startsWith('```json') && text.endsWith('```')) {
